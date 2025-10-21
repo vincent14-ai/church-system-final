@@ -7,12 +7,6 @@ import { Church, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from './theme-toggle';
 
-const AUTHORIZED_CREDENTIALS = {
-  'personal@jpcc.church': { password: 'personal123', role: 'personal' },
-  'attendance@jpcc.church': { password: 'attendance123', role: 'attendance' },
-  'reports@jpcc.church': { password: 'reports123', role: 'reports' }
-};
-
 export function Login({ onLogin, isDark, onToggleTheme }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,15 +19,24 @@ export function Login({ onLogin, isDark, onToggleTheme }) {
     setIsLoading(true);
     setError('');
 
-    // Simulate login delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const credentials = AUTHORIZED_CREDENTIALS[email.toLowerCase()];
+      const data = await res.json();
 
-    if (credentials && credentials.password === password) {
-      onLogin(email, credentials.role);
-    } else {
-      setError('Invalid email or password. Please try again.');
+      if (res.ok) {
+        // backend sends back role, e.g. "personal"
+        onLogin(email, data.role);
+      } else {
+        setError(data.message || "Invalid email or password");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Something went wrong. Try again later.");
     }
 
     setIsLoading(false);
@@ -45,7 +48,7 @@ export function Login({ onLogin, isDark, onToggleTheme }) {
       <div className="absolute top-6 right-6">
         <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
       </div>
-      
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -123,7 +126,7 @@ export function Login({ onLogin, isDark, onToggleTheme }) {
                   </div>
                 </div>
               </div>
-              
+
               {error && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -134,9 +137,9 @@ export function Login({ onLogin, isDark, onToggleTheme }) {
                 </motion.div>
               )}
 
-              <Button 
-                type="submit" 
-                className="w-full h-12 text-base bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg" 
+              <Button
+                type="submit"
+                className="w-full h-12 text-base bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
                 disabled={isLoading}
               >
                 {isLoading ? (

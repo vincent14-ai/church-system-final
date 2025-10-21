@@ -5,11 +5,11 @@ import { Attendance } from './components/attendance';
 import { Reports } from './components/reports';
 import { ThemeToggle } from './components/theme-toggle';
 import { Button } from './components/ui/button';
-import { 
-  Church, 
-  User, 
-  Calendar, 
-  FileText, 
+import {
+  Church,
+  User,
+  Calendar,
+  FileText,
   LogOut,
   Menu,
   X
@@ -43,34 +43,48 @@ export default function App() {
   };
 
   const handleLogin = (email, role) => {
-    setUser({ email, role });
+    const userData = { email, role };
+    setUser(userData);
     setActiveView(role);
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setUser(null);
-    setActiveView('personal');
+    setActiveView("personal");
     setIsMobileMenuOpen(false);
+    localStorage.removeItem("user");
   };
 
+  // on page load
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setUser(userData);
+      setActiveView(userData.role);
+    }
+  }, []);
+
+
   const navigation = [
-    { 
-      id: 'personal', 
-      label: 'Personal Info', 
+    {
+      id: 'personal',
+      label: 'Personal Info',
       icon: User,
-      available: !user || user.role === 'personal'
+      available: user?.role === 'personal'
     },
-    { 
-      id: 'attendance', 
-      label: 'Attendance', 
+    {
+      id: 'attendance',
+      label: 'Attendance',
       icon: Calendar,
-      available: !user || user.role === 'attendance'
+      available: user?.role === 'attendance'
     },
-    { 
-      id: 'reports', 
-      label: 'Reports', 
+    {
+      id: 'logsandreports',
+      label: 'Reports',
       icon: FileText,
-      available: !user || user.role === 'reports'
+      available: user?.role === 'logsandreports'
     },
   ];
 
@@ -133,24 +147,21 @@ export default function App() {
                 >
                   <Button
                     variant={activeView === nav.id ? 'default' : 'ghost'}
-                    className={`w-full justify-start h-11 shadow-sm transition-all duration-300 group ${
-                      activeView === nav.id 
-                        ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground' 
+                    className={`w-full justify-start h-11 shadow-sm transition-all duration-300 group ${activeView === nav.id
+                        ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground'
                         : 'hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/50 hover:shadow-md hover:scale-[1.02]'
-                    }`}
+                      }`}
                     onClick={() => {
                       setActiveView(nav.id);
                       setIsMobileMenuOpen(false);
                     }}
                   >
-                    <nav.icon className={`w-4 h-4 mr-3 transition-all duration-300 ${
-                      activeView === nav.id 
-                        ? 'text-primary-foreground' 
+                    <nav.icon className={`w-4 h-4 mr-3 transition-all duration-300 ${activeView === nav.id
+                        ? 'text-primary-foreground'
                         : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
-                    }`} />
-                    <span className={`transition-all duration-300 ${
-                      activeView !== nav.id ? 'group-hover:translate-x-1' : ''
-                    }`}>
+                      }`} />
+                    <span className={`transition-all duration-300 ${activeView !== nav.id ? 'group-hover:translate-x-1' : ''
+                      }`}>
                       {nav.label}
                     </span>
                     {activeView === nav.id && (
@@ -189,7 +200,7 @@ export default function App() {
         <div className="hidden lg:block w-72 fixed left-0 top-0 h-screen bg-card/95 backdrop-blur-md border-r border-border/50 shadow-xl z-40">
           <div className="p-6 h-full flex flex-col overflow-y-auto sidebar-scroll">
             {/* Header */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-4 mb-8 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20"
@@ -219,26 +230,22 @@ export default function App() {
                 >
                   <Button
                     variant={activeView === nav.id ? 'default' : 'ghost'}
-                    className={`w-full justify-start h-12 text-left transition-all duration-300 group relative overflow-hidden ${
-                      activeView === nav.id 
-                        ? 'bg-gradient-to-r from-primary to-primary/90 shadow-lg text-primary-foreground' 
+                    className={`w-full justify-start h-12 text-left transition-all duration-300 group relative overflow-hidden ${activeView === nav.id
+                        ? 'bg-gradient-to-r from-primary to-primary/90 shadow-lg text-primary-foreground'
                         : 'hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/50 hover:shadow-md hover:scale-[1.02] text-foreground hover:text-accent-foreground'
-                    }`}
+                      }`}
                     onClick={() => setActiveView(nav.id)}
                   >
-                    <div className={`absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/5 opacity-0 transition-opacity duration-300 ${
-                      activeView !== nav.id ? 'group-hover:opacity-100' : ''
-                    }`} />
-                    <nav.icon className={`w-5 h-5 mr-3 flex-shrink-0 transition-all duration-300 ${
-                      activeView === nav.id 
-                        ? 'text-primary-foreground' 
+                    <div className={`absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/5 opacity-0 transition-opacity duration-300 ${activeView !== nav.id ? 'group-hover:opacity-100' : ''
+                      }`} />
+                    <nav.icon className={`w-5 h-5 mr-3 flex-shrink-0 transition-all duration-300 ${activeView === nav.id
+                        ? 'text-primary-foreground'
                         : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
-                    }`} />
-                    <span className={`flex-1 relative z-10 transition-all duration-300 ${
-                      activeView === nav.id 
-                        ? 'text-primary-foreground' 
+                      }`} />
+                    <span className={`flex-1 relative z-10 transition-all duration-300 ${activeView === nav.id
+                        ? 'text-primary-foreground'
                         : 'group-hover:translate-x-1'
-                    }`}>
+                      }`}>
                       {nav.label}
                     </span>
                     {activeView === nav.id && (
@@ -262,11 +269,11 @@ export default function App() {
                   {user.role} Access
                 </p>
               </div>
-              
+
               <div className="flex flex-col gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={handleLogout} 
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
                   className="w-full h-10 shadow-sm hover:shadow-md transition-all duration-300 group hover:bg-destructive/10 hover:border-destructive/50 hover:scale-[1.02]"
                 >
                   <LogOut className="w-4 h-4 mr-2 transition-all duration-300 text-muted-foreground group-hover:text-destructive group-hover:scale-110" />
@@ -292,7 +299,7 @@ export default function App() {
             >
               {activeView === 'personal' && <PersonalInfo isDark={isDark} onToggleTheme={toggleTheme} />}
               {activeView === 'attendance' && <Attendance isDark={isDark} onToggleTheme={toggleTheme} />}
-              {activeView === 'reports' && <Reports isDark={isDark} onToggleTheme={toggleTheme} />}
+              {activeView === 'logsandreports' && <Reports isDark={isDark} onToggleTheme={toggleTheme} />}
             </motion.div>
           </AnimatePresence>
         </div>
