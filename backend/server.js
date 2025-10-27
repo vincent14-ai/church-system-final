@@ -18,6 +18,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/import", importRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>

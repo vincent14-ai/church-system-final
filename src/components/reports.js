@@ -24,7 +24,6 @@ import axios from "axios";
 export function Reports({ isDark, onToggleTheme }) {
   const [activeTab, setActiveTab] = useState('members');
   const [members, setMembers] = useState([]);
-  const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // Filter states
@@ -82,6 +81,30 @@ export function Reports({ isDark, onToggleTheme }) {
       const res = await axios.post(
         "http://localhost:5000/api/export/members/export",
         filters,
+        { responseType: "blob" }
+      );
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "members_report.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
+  };
+
+  const handleExportTemplate = async () => {
+    try {
+
+      const res = await axios.get(
+        "http://localhost:5000/api/export/members/template",
         { responseType: "blob" }
       );
 
@@ -515,17 +538,7 @@ export function Reports({ isDark, onToggleTheme }) {
                           <Button
                             variant="outline"
                             className="w-full"
-                            onClick={() => handleExportPost([{
-                              firstName: 'Sample',
-                              lastName: 'Name',
-                              maritalStatus: 'Single',
-                              dateOfBirth: '1990-01-01',
-                              gender: 'Male',
-                              contactNumber: '+63 912 345 6789',
-                              address: 'Sample Address',
-                              ageGroup: 'Young Adults (18-25)',
-                              memberStatus: 'Active'
-                            }], 'member_template')}
+                            onClick={handleExportTemplate}
                           >
                             Member Template
                           </Button>

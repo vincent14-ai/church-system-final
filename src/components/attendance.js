@@ -11,73 +11,161 @@ import { motion } from 'framer-motion';
 import { ThemeToggle } from './theme-toggle';
 import axios from "axios";
 
+const normalizeDate = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function Attendance({ isDark, onToggleTheme }) {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(normalizeDate(new Date()));
   const [searchTerm, setSearchTerm] = useState('');
   const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [members, setMembers] = useState([]); // ✅ store backend members here
+  const [members, setMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
+  const [summary, setSummary] = useState({
+    presentCount: 0,
+    absentCount: 0,
+    totalCount: 0
+  });
 
+  // Fetch all members once
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/members/attendance"); // ✅ change to your members endpoint
-        console.log("Fetched members:", res.data);
+        const res = await axios.get("http://localhost:5000/api/members/attendance");
         setMembers(res.data);
-        setFilteredMembers(res.data); // initialize filter list
+        setFilteredMembers(res.data);
       } catch (err) {
         console.error("Error fetching members:", err);
       }
     };
-
     fetchMembers();
   }, []);
 
+  // Fetch attendance for selected date
   useEffect(() => {
-    // ✅ handle search filtering based on fetched members
+    const fetchAttendance = async () => {
+      try {
+        const normalizedDate = normalizeDate(selectedDate);
+
+        const res = await axios.get("http://localhost:5000/api/attendance/get", {
+          params: { date: normalizedDate },
+        });
+
+        const { records, summary } = res.data;
+
+        // Normalize record dates
+        const dbRecords = (records || []).map((record) => ({
+          id: record.id,
+          fullName: record.fullName,
+          ageGroup: record.ageGroup,
+          date: normalizeDate(record.date),
+          status: record.status,
+        }));
+
+        setAttendanceRecords(dbRecords);
+        setSummary(summary || { presentCount: 0, absentCount: 0, totalCount: 0 });
+
+      } catch (err) {
+        console.error("Error fetching attendance:", err);
+      }
+    };
+
+    if (selectedDate) fetchAttendance();
+  }, [selectedDate]);
+
+  // Search filter
+  useEffect(() => {
     const filtered = members.filter(member =>
       member.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredMembers(filtered);
   }, [searchTerm, members]);
 
-  const markAttendance = (memberId, status) => {
-    const member = filteredMembers.find(m => m.id === memberId);
+  // Mark attendance (save + update state)
+  const markAttendance = async (memberId, status) => {
+    const member = filteredMembers.find((m) => m.id === memberId);
     if (!member) return;
 
-    const existingRecordIndex = attendanceRecords.findIndex(
-      record => record.id === memberId && record.date === selectedDate
-    );
+    const normalizedDate = normalizeDate(selectedDate);
 
     const newRecord = {
       id: memberId,
       fullName: member.fullName,
       ageGroup: member.ageGroup,
-      date: selectedDate,
+      date: normalizedDate,
       status,
     };
 
-    if (existingRecordIndex >= 0) {
-      // Update existing record
-      const updatedRecords = [...attendanceRecords];
-      updatedRecords[existingRecordIndex] = newRecord;
-      setAttendanceRecords(updatedRecords);
-    } else {
-      // Add new record
-      setAttendanceRecords(prev => [...prev, newRecord]);
+    try {
+      await axios.post("http://localhost:5000/api/attendance/create", {
+        member_id: memberId,
+        date: normalizedDate,
+        status,
+      });
+
+      setAttendanceRecords((prev) => {
+        const existingIndex = prev.findIndex(
+          (r) => r.id === memberId && r.date === normalizedDate
+        );
+
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = newRecord;
+          return updated;
+        }
+        return [...prev, newRecord];
+      });
+
+      setSummary(prev => {
+        const alreadyMarked = attendanceRecords.some(
+          r => r.id === memberId && r.date === normalizedDate
+        );
+
+        if (alreadyMarked) return prev;
+
+        return {
+          presentCount: status === "present" ? prev.presentCount + 1 : prev.presentCount,
+          absentCount: status === "absent" ? prev.absentCount + 1 : prev.absentCount,
+          totalCount: prev.totalCount + 1,
+        };
+      });
+
+    } catch (err) {
+      console.error("Error saving attendance:", err);
     }
   };
 
-  const getAttendanceStatus = (memberId) => {
+  // Get attendance status for each member
+  const getAttendanceStatus = (id) => {
     const record = attendanceRecords.find(
-      record => record.id === memberId && record.date === selectedDate
+      (record) => record.id == id && normalizeDate(record.date) === normalizeDate(selectedDate)
     );
     return record?.status;
   };
 
-  const todayAttendance = attendanceRecords.filter(record => record.date === selectedDate);
-  const presentCount = todayAttendance.filter(record => record.status === 'present').length;
-  const absentCount = todayAttendance.filter(record => record.status === 'absent').length;
+  // Recalculate summary when data changes
+  useEffect(() => {
+    if (!attendanceRecords || attendanceRecords.length === 0) return;
+
+    const normalized = normalizeDate(selectedDate);
+    const todayAttendance = attendanceRecords.filter(
+      (record) => record.date === normalized
+    );
+
+    const localPresent = todayAttendance.filter(r => r.status === "present").length;
+    const localAbsent = todayAttendance.filter(r => r.status === "absent").length;
+    const localTotal = todayAttendance.length;
+
+    setSummary({
+      presentCount: localPresent,
+      absentCount: localAbsent,
+      totalCount: localTotal,
+    });
+  }, [attendanceRecords, selectedDate]);
 
   return (
     <div className="min-h-screen">
@@ -133,7 +221,7 @@ export function Attendance({ isDark, onToggleTheme }) {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Recorded</p>
-                      <p className="text-2xl">{todayAttendance.length}</p>
+                      <p className="text-2xl">{summary.totalCount}</p>
                     </div>
                   </div>
                 </Card>
@@ -144,7 +232,7 @@ export function Attendance({ isDark, onToggleTheme }) {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Present</p>
-                      <p className="text-2xl">{presentCount}</p>
+                      <p className="text-2xl">{summary.presentCount || "0"}</p>
                     </div>
                   </div>
                 </Card>
@@ -155,7 +243,7 @@ export function Attendance({ isDark, onToggleTheme }) {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Absent</p>
-                      <p className="text-2xl">{absentCount}</p>
+                      <p className="text-2xl">{summary.absentCount || "0"}</p>
                     </div>
                   </div>
                 </Card>
@@ -223,7 +311,7 @@ export function Attendance({ isDark, onToggleTheme }) {
               </div>
 
               {/* Attendance Summary Table */}
-              {todayAttendance.length > 0 && (
+              {attendanceRecords.length > 0 && (
                 <div className="space-y-4">
                   <h3>Today's Attendance Summary</h3>
                   <Card>
@@ -237,7 +325,7 @@ export function Attendance({ isDark, onToggleTheme }) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {todayAttendance.map((record) => (
+                        {attendanceRecords.map((record) => (
                           <TableRow key={`${record.id}-${record.date}`}>
                             <TableCell>{record.fullName}</TableCell>
                             <TableCell>{record.ageGroup}</TableCell>
@@ -246,7 +334,14 @@ export function Attendance({ isDark, onToggleTheme }) {
                                 {record.status === 'present' ? 'Present' : 'Absent'}
                               </Badge>
                             </TableCell>
-                            <TableCell>{record.date}</TableCell>
+                            <TableCell>
+                              {new Date(record.date).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </TableCell>
+
                           </TableRow>
                         ))}
                       </TableBody>

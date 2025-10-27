@@ -29,10 +29,17 @@ export async function addMember(memberData) {
   let trainingArray = [];
 
   if (spiritual_trainings && typeof spiritual_trainings === "object") {
+    const typeMap = {
+      LifeClass: "Life Class",
+      SOL1: "SOL 1",
+      SOL2: "SOL 2",
+      SOL3: "SOL 3",
+    };
+
     for (const key of Object.keys(spiritual_trainings)) {
       if (spiritual_trainings[key] === true && !key.endsWith("Year")) {
         trainingArray.push({
-          training_type: key,
+          training_type: typeMap[key] || key,  // <- this line changed
           year: spiritual_trainings[`${key}Year`] || null,
         });
       }

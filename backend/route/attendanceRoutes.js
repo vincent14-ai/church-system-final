@@ -1,10 +1,9 @@
-import { Router } from "express";
-import { readAttendance } from "../controller/attendanceContoller.js";
+import express from "express";
+import { createAttendance, fetchAttendance } from "../controller/attendanceController.js";
 
-const router = Router();
+const router = express.Router();
 
-// GET /api/attendance
-router.get("/", readAttendance);   
-router.get("/", readAttendance);   
+router.post("/create", createAttendance);
+router.get("/get", fetchAttendance);
 
 export default router;

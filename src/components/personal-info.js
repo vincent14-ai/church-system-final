@@ -395,12 +395,9 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                   <Label>Cell Group Member</Label>
                   <Select
                     name="attending_cell_group"
-                    value={String(data.attending_cell_group)} // must be a string for Select
+                    value={data.attending_cell_group} // must be a string for Select
                     onValueChange={(value) =>
-                      setData((prev) => ({
-                        ...prev,
-                        attending_cell_group: Number(value), // convert back to number
-                      }))
+                      setData((prev) => ({ ...prev, attending_cell_group: value }))
                     }
                   >
                     <SelectTrigger>
@@ -435,7 +432,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       <div key={key} className="flex items-center space-x-4">
                         <Checkbox
                           id={key}
-                          checked={!!data.spiritual_trainings[key]} // ✅ always boolean
+                          checked={!!data.spiritual_trainings[key]}
                           onCheckedChange={(checked) =>
                             setData((prev) => ({
                               ...prev,
@@ -471,31 +468,31 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                     ))}
 
                     {/* Willing to train */}
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="willing_training"
-                        checked={!!data.spiritual_trainings.willing_training}
-                        onCheckedChange={(checked) =>
-                          setData((prev) => ({
-                            ...prev,
-                            spiritual_trainings: {
-                              ...prev.spiritual_trainings,
-                              willing_training: checked,
-                            },
-                          }))
-                        }
-                      />
-                      <Label htmlFor="willing_training">
-                        Willing to undergo spiritual training (if none of the above was checked)
-                      </Label>
-                    </div>
+                    {!Object.entries(data.spiritual_trainings)
+                      .filter(([key]) => key !== "willing_training")
+                      .some(([, value]) => value) && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="willing_training"
+                            checked={!!data.spiritual_trainings.willing_training}
+                            onCheckedChange={(checked) =>
+                              setData((prev) => ({
+                                ...prev,
+                                spiritual_trainings: {
+                                  ...prev.spiritual_trainings,
+                                  willing_training: checked,
+                                },
+                              }))
+                            }
+                          />
+                          <Label htmlFor="willing_training">
+                            Willing to undergo spiritual training (if none of the above was checked)
+                          </Label>
+                        </div>
+                      )}
                   </div>
-
-                  {/* Optional debug output */}
-                  <pre className="text-xs bg-gray-100 p-2 rounded">
-                    {JSON.stringify(data, null, 2)}
-                  </pre>
                 </div>
+
 
                 {/* Member Status */}
                 <div className="space-y-2">
