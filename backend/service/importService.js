@@ -23,34 +23,89 @@ export async function importMembersFromExcel(req, res) {
       return 0;
     };
 
-    const formatDate = (value) => {
+    function normalizeDate(value) {
       if (!value) return null;
 
-      if (value instanceof Date) {
+      // If Excel gives you a Date object (sometimes it does!)
+      if (value instanceof Date && !isNaN(value)) {
         return value.toISOString().split("T")[0];
       }
 
-      if (typeof value === "string") {
-        const [day, month, year] = value.split(/[\/\-]/);
-        if (day && month && year) {
-          return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+      // If it's a string like "November 25, 1985" or "Nov 25, 1985"
+      const parsed = new Date(value);
+      if (!isNaN(parsed)) {
+        return parsed.toISOString().split("T")[0];
+      }
+
+      // Fallback: try manual parsing if Excel made it weird
+      const parts = value.split(/[\/\-\s,]+/); // handles "Nov 25 1985", "25-11-1985", etc.
+      if (parts.length === 3) {
+        let [month, day, year] = parts;
+        // If month is word, convert it to number
+        if (isNaN(month)) {
+          const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+          month = monthIndex + 1;
         }
+        return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       }
 
-      if (typeof value === "number") {
-        const jsDate = new Date(Math.round((value - 25569) * 86400 * 1000));
-        return jsDate.toISOString().split("T")[0];
+      return null; // fallback if it's totally unrecognizable
+    }
+
+    function normalizeDateAttended(value) {
+      if (!value) return null;
+
+      // Excel sometimes gives actual Date objects
+      if (value instanceof Date && !isNaN(value)) {
+        return value.toISOString().split("T")[0];
       }
 
-      return null;
-    };
+      const str = value.toString().trim();
+
+      // --- CASE 1: Year only ---
+      if (/^\d{4}$/.test(str)) {
+        // just a year
+        return `${str}-01`; // or `${str}-01-01` if you prefer full date
+      }
+
+      // --- CASE 2: Month and Year ---
+      // Handles "November/2014", "Nov 2014", "11/2014"
+      const monthYearMatch = str.match(
+        /^(?:([A-Za-z]+)|(\d{1,2}))[\s\/\-]+(\d{4})$/
+      );
+      if (monthYearMatch) {
+        const monthName = monthYearMatch[1];
+        const monthNum = monthYearMatch[2];
+        const year = monthYearMatch[3];
+
+        let month;
+        if (monthName) {
+          const monthIndex = new Date(`${monthName} 1, ${year}`).getMonth();
+          month = monthIndex + 1;
+        } else {
+          month = parseInt(monthNum, 10);
+        }
+
+        return `${year}-${String(month).padStart(2, "0")}`;
+        // or `${year}-${String(month).padStart(2, "0")}-01` if you want full date format
+      }
+
+      // --- CASE 3: Full date (November 25, 1985 or 11/25/1985) ---
+      const parsed = new Date(str);
+      if (!isNaN(parsed)) {
+        return parsed.toISOString().split("T")[0];
+      }
+
+      return null; // fallback if unrecognizable
+    }
+
 
     // --- Normalize fields ---
     function normalizeRow(row) {
       const normalized = {
         last_name: row["Last Name"] || "",
         first_name: row["First Name"] || "",
-        date_of_birth: formatDate(row["DOB (YYYY-MM-DD)"]),
+        date_of_birth: normalizeDate(row["DOB"]),
         gender: row["Gender"] || "",
         marital_status: row["Marital Status"] || "",
         age_group: row["Age Group"] || "",
@@ -59,7 +114,7 @@ export async function importMembersFromExcel(req, res) {
         prev_church_attendee: normalizeBoolean(row["Previous Church Attendee?"]),
         prev_church: row["Previous Church Name"] || "",
         invited_by: row["Invited By"] || "",
-        date_attended: row["Date Attended (YYYY-MM)"],
+        date_attended: normalizeDateAttended(row["Date Attended"]),
         attending_cell_group: normalizeBoolean(row["Attending Cellgroup?"]),
         cell_leader_name: row["Cellgroup Leader"] || "",
         church_ministry: row["Ministry"] || "",
@@ -82,22 +137,22 @@ export async function importMembersFromExcel(req, res) {
     // --- Convert training columns into object with flags ---
     function normalizeTrainings(row) {
       const trainingObject = {};
-      const trainingTypes = [
-        "Life Class",
-        "SOL 1",
-        "SOL 2",
-        "SOL 3",
-      ];
+      const trainingTypes = ["Life Class", "SOL 1", "SOL 2", "SOL 3"];
 
       for (const type of trainingTypes) {
-        const yesNo = row[type];
-        const year = row[`${type} Year`];
-        trainingObject[type.replace(/\s+/g, "")] = yesNo?.toString().toLowerCase() === "yes";
-        trainingObject[`${type.replace(/\s+/g, "")}Year`] = year || null;
+        const value = row[type];
+        if (value) {
+          trainingObject[type.replace(/\s+/g, "")] = true;   // completed
+          trainingObject[`${type.replace(/\s+/g, "")}Year`] = value.toString();
+        } else {
+          trainingObject[type.replace(/\s+/g, "")] = false;  // not completed
+          trainingObject[`${type.replace(/\s+/g, "")}Year`] = null;
+        }
       }
 
       return trainingObject;
     }
+
 
     // --- Convert household columns into an array of objects ---
     function normalizeHouseholds(row) {

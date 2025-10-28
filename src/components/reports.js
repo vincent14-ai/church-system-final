@@ -29,8 +29,8 @@ export function Reports({ isDark, onToggleTheme }) {
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGender, setSelectedGender] = useState("");
-  const [selectedAgeGroup, setSelectedAgeGroup] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const fileInputRef = useRef(null);
@@ -200,7 +200,7 @@ export function Reports({ isDark, onToggleTheme }) {
                       <Filter className="w-4 h-4 text-primary" />
                     </div>
                     <h3 className="text-lg">Filters & Search</h3>
-                    <div className="flex items-center bg-slate-900 px-2 rounded">
+                    {/*<div className="flex items-center bg-slate-900 px-2 rounded">
                       <Search size={16} />
                       <input
                         type="text"
@@ -209,7 +209,7 @@ export function Reports({ isDark, onToggleTheme }) {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="bg-transparent p-1 text-sm outline-none"
                       />
-                    </div>
+                    </div>*/}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div className="space-y-2">
@@ -278,8 +278,8 @@ export function Reports({ isDark, onToggleTheme }) {
                         onClick={() => {
                           setSearchTerm("");
                           setSelectedGender("");
-                          setSelectedAgeGroup("");
-                          setSelectedStatus("");
+                          setSelectedAgeGroup("all");
+                          setSelectedStatus("all");
                           setStartDate("");
                           setEndDate("");
                         }}
@@ -317,12 +317,12 @@ export function Reports({ isDark, onToggleTheme }) {
                           <TableHead>Gender</TableHead>
                           <TableHead>Contact Number</TableHead>
                           <TableHead>Previous Church Attendee?</TableHead>
+                          <TableHead>Previous Church Name</TableHead>
                           <TableHead>Address</TableHead>
                           <TableHead>Age Group</TableHead>
                           <TableHead>Spiritual Training</TableHead>
                           <TableHead>Willing to Train?</TableHead>
                           <TableHead>Household Members</TableHead>
-                          <TableHead>Previous Churh</TableHead>
                           <TableHead>Invited By</TableHead>
                           <TableHead>Date Attended</TableHead>
                           <TableHead>Attending Cell Group?</TableHead>
@@ -347,19 +347,19 @@ export function Reports({ isDark, onToggleTheme }) {
                               <TableCell>{member.gender}</TableCell>
                               <TableCell>{member.contact_number}</TableCell>
                               <TableCell>{member.prev_church_attendee ? "Yes" : "No"}</TableCell>
-                              <TableCell className="max-w-xs truncate">{member.address}</TableCell>
+                              <TableCell>{member.prev_church}</TableCell>
+                              <TableCell className="max-w-xs truncate">{member.address || "None"}</TableCell>
                               <TableCell>{member.age_group}</TableCell>
                               <TableCell>{member.trainings || "None"}</TableCell>
                               <TableCell>{member.willing_training ? "Yes" : "No"}</TableCell>
                               <TableCell>{member.households || "None"}</TableCell>
-                              <TableCell>{member.prev_church}</TableCell>
-                              <TableCell>{member.invited_by}</TableCell>
+                              <TableCell>{member.invited_by || "None"}</TableCell>
                               <TableCell>{member.date_attended}</TableCell>
                               <TableCell>{member.attending_cell_group ? "Yes" : "No"}</TableCell>
-                              <TableCell>{member.cell_leader_name}</TableCell>
-                              <TableCell>{member.church_ministry}</TableCell>
-                              <TableCell>{member.consolidation}</TableCell>
-                              <TableCell>{member.reason}</TableCell>
+                              <TableCell>{member.cell_leader_name || "N/A"}</TableCell>
+                              <TableCell>{member.church_ministry || "None"}</TableCell>
+                              <TableCell>{member.consolidation || "N/A"}</TableCell>
+                              <TableCell>{member.reason || "None"}</TableCell>
                               <TableCell>{member.water_baptized ? "Yes" : "No"}</TableCell>
                               <TableCell>
                                 <Badge variant={member.member_status === 'Active' ? 'default' : 'secondary'}>

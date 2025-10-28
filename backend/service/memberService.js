@@ -93,12 +93,12 @@ export async function getMembers(filters = {}) {
     params.push(marital_status);
   }
 
-  if (age_group) {
+  if (age_group && age_group !== "all") {
     whereClauses.push("m.age_group = ?");
     params.push(age_group);
   }
 
-  if (member_status) {
+  if (member_status && member_status !== "all") {
     whereClauses.push("m.member_status = ?");
     params.push(member_status);
   }
