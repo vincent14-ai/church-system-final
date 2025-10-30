@@ -1,4 +1,4 @@
-import { setAttendance, getAttendanceByDate, getAttendanceSummaryByDate } from "../service/attendanceService.js";
+import { setAttendance, getAttendanceByDate, getAttendanceSummaryByDate, getFilteredAttendance } from "../service/attendanceService.js";
 
 export async function createAttendance(req, res) {
   try {
@@ -24,5 +24,24 @@ export async function fetchAttendance(req, res) {
   } catch (err) {
     console.error("Error fetching attendance:", err);
     res.status(500).json({ error: "Database error" });
+  }
+}
+
+export async function readFilteredAttendance(req, res) {
+  try {
+    const filters = {
+      ageGroup: req.query.ageGroup || "all",
+      memberStatus: req.query.memberStatus || "all",
+      dateFrom: req.query.dateFrom || null,
+      dateTo: req.query.dateTo || null
+    };
+
+    console.log("📥 Filters received:", filters);
+
+    const data = await getFilteredAttendance(filters);
+    res.json(data);
+  } catch (err) {
+    console.error("❌ Error fetching filtered attendance:", err);
+    res.status(500).json({ error: "Failed to fetch filtered attendance" });
   }
 }

@@ -333,18 +333,39 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                   ))}
                 </div>
 
-                {/* Church Information */}
+                <div className="space-y-2">
+                  <Label>Previous Church Attendee?</Label>
+                  <Select
+                    name="prev_church_attendee"
+                    value={String(data.prev_church_attendee)}
+                    onValueChange={(value) =>
+                      setData((prev) => ({ ...prev, prev_church_attendee: Number(value) }))
+                    }
+                    className="w-full p-2 rounded-md bg-slate-900 border border-slate-700"
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1" >Yes</SelectItem>
+                      <SelectItem value="0">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {data.prev_church_attendee === 1 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="prev_church">Previous Born-Again Christian Church</Label>
+                      <Input
+                        id="prev_church"
+                        name="prev_church"
+                        value={data.prev_church}
+                        onChange={handleChange}
+                        placeholder="Church name (if applicable)"
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="prev_church">Previous Born-Again Christian Church</Label>
-                    <Input
-                      id="prev_church"
-                      name="prev_church"
-                      value={data.prev_church}
-                      onChange={handleChange}
-                      placeholder="Church name (if applicable)"
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="invited_by">Invited By</Label>
                     <Input
@@ -354,9 +375,6 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       onChange={handleChange}
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="date_attended">Date Attended in JPCC Balayan</Label>
                     <Input
@@ -367,6 +385,11 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       onChange={handleChange}
                     />
                   </div>
+
+                </div>
+
+                {/* Cell Group */}
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="church_ministry">Church Ministry</Label>
                     <Select
@@ -388,28 +411,24 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                {/* Cell Group */}
-                <div className="space-y-4">
-                  <Label>Cell Group Member</Label>
+                  <Label>Cellgroup Member?</Label>
                   <Select
                     name="attending_cell_group"
-                    value={data.attending_cell_group} // must be a string for Select
+                    value={String(data.attending_cell_group)} // must be a string for Select
                     onValueChange={(value) =>
-                      setData((prev) => ({ ...prev, attending_cell_group: value }))
+                      setData((prev) => ({ ...prev, attending_cell_group: Number(value) }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Yes">Yes</SelectItem>
-                      <SelectItem value="No">No</SelectItem>
+                      <SelectItem value="1">Yes</SelectItem>
+                      <SelectItem value="0">No</SelectItem>
                     </SelectContent>
                   </Select>
 
-                  {data.attending_cell_group === "Yes" && (
+                  {data.attending_cell_group === 1 && (
                     <div className="space-y-2">
                       <Label htmlFor="cell_leader_name">Cell Leader's Name</Label>
                       <Input
@@ -493,22 +512,71 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                   </div>
                 </div>
 
+                {/* Consolidation */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="consolidation" className="text-sm">Consolidation</Label>
+                    <Input
+                      id="consolidation"
+                      name="consolidation"
+                      value={data.consolidation}
+                      onChange={handleChange}
+                      className="h-11 bg-input-background shadow-sm"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reason" className="text-sm">Reason</Label>
+                    <Input
+                      id="reason"
+                      name="reason"
+                      value={data.reason}
+                      onChange={handleChange}
+                      className="h-11 bg-input-background shadow-sm"
+                      required
+                    />
+                  </div>
+                </div>
 
                 {/* Member Status */}
-                <div className="space-y-2">
-                  <Label htmlFor="member_status">Member Status</Label>
-                  <Select
-                    value={data.member_status}
-                    onValueChange={(value) => setData(prev => ({ ...prev, member_status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="water_baptized">Water Baptized?</Label>
+                    <Select
+                      value={String(data.water_baptized)}
+                      onValueChange={(value) =>
+                        setData((prev) => ({
+                          ...prev,
+                          water_baptized: Number(value), // ✅ convert to number immediately
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Yes</SelectItem>
+                        <SelectItem value="0">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+
+                  <div className="space-y-2">
+                    <Label htmlFor="member_status">Member Status</Label>
+                    <Select
+                      value={data.member_status}
+                      onValueChange={(value) => setData(prev => ({ ...prev, member_status: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <Button

@@ -69,3 +69,64 @@ export async function getAttendanceSummaryByDate(date) {
 
   return rows[0];
 }
+
+export async function getFilteredAttendance(filters) {
+  const { ageGroup, memberStatus, dateFrom, dateTo } = filters;
+
+  // Build dynamic WHERE conditions
+  const whereClauses = [];
+  const params = [];
+
+  if (ageGroup && ageGroup !== "all") {
+    whereClauses.push("m.age_group = ?");
+    params.push(ageGroup);
+  }
+
+  if (memberStatus && memberStatus !== "all") {
+    whereClauses.push("m.member_status = ?");
+    params.push(memberStatus);
+  }
+
+  if (dateFrom && dateTo) {
+    whereClauses.push("DATE(a.date) BETWEEN ? AND ?");
+    params.push(dateFrom, dateTo);
+  } else if (dateFrom) {
+    whereClauses.push("DATE(a.date) >= ?");
+    params.push(dateFrom);
+  } else if (dateTo) {
+    whereClauses.push("DATE(a.date) <= ?");
+    params.push(dateTo);
+  }
+
+  const whereSQL = whereClauses.length > 0 ? "WHERE " + whereClauses.join(" AND ") : "";
+
+  // Query attendance joined with member data
+  const [records] = await db.query(
+    `
+    SELECT 
+      a.member_id AS id,
+      CONCAT(m.first_name, ' ', m.last_name) AS fullName,
+      m.age_group AS ageGroup,
+      m.member_status AS memberStatus,
+      a.date,
+      a.status
+    FROM attendance a
+    JOIN member_data m ON a.member_id = m.member_id
+    ${whereSQL}
+    ORDER BY a.date DESC
+    `,
+    params
+  );
+
+  // Compute summary counts
+  const presentCount = records.filter(r => r.status === "present").length;
+  const absentCount = records.filter(r => r.status === "absent").length;
+  const totalCount = records.length;
+  const rate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
+
+  return {
+    records,
+    summary: { presentCount, absentCount, totalCount, rate }
+  };
+}
+

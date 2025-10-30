@@ -19,7 +19,7 @@ export async function generateMemberReport(members) {
     { header: "Invited By", key: "invited_by", width: 20 },
     { header: "Date Attendded", key: "date_attended", width: 20 },
     { header: "Attending Cellgroup?", key: "attending_cell_group", width: 30 },
-    { header: "Cellgroup Leader", key: "cell_group_leader", width: 30 },
+    { header: "Cellgroup Leader", key: "cell_leader_name", width: 30 },
     { header: "Ministry", key: "church_ministry", width: 30 },
     { header: "Consolidation", key: "consolidation", width: 30 },
     { header: "Trainings", key: "trainings", width: 30 },

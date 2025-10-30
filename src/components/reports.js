@@ -43,6 +43,21 @@ export function Reports({ isDark, onToggleTheme }) {
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentRows = members.slice(startIndex, startIndex + rowsPerPage);
 
+  //attendance
+  const [filters, setFilters] = useState({
+    ageGroup: "all",
+    memberStatus: "all",
+    dateFrom: "",
+    dateTo: ""
+  });
+  const [records, setRecords] = useState([]);
+  const [summary, setSummary] = useState({
+    presentCount: 0,
+    absentCount: 0,
+    totalCount: 0,
+    rate: 0
+  });
+
   // ✅ Fetch with filters
   const fetchMembers = async () => {
     try {
@@ -63,9 +78,31 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
+  const fetchFilteredAttendance = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/attendance/filter", {
+        params: filters
+      });
+      console.log("📦 Fetched filtered data:", res.data);
+      setRecords(res.data.records);
+      setSummary(res.data.summary);
+    } catch (err) {
+      console.error("❌ Error fetching filtered attendance:", err);
+    }
+  };
+
   useEffect(() => {
     fetchMembers();
   }, []);
+
+  useEffect(() => {
+    fetchFilteredAttendance();
+  }, []);
+
+  const clearFilters = () => {
+    setFilters({ ageGroup: "all", memberStatus: "all", dateFrom: "", dateTo: "" });
+    fetchFilteredAttendance();
+  };
 
   const handleExportPost = async () => {
     try {
@@ -193,14 +230,15 @@ export function Reports({ isDark, onToggleTheme }) {
                   <TabsTrigger value="import" className="h-10">Import/Export</TabsTrigger>
                 </TabsList>
 
-                {/* Filters Section */}
-                <Card className="p-6 bg-gradient-to-br from-muted/30 to-muted/10 shadow-sm">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-                      <Filter className="w-4 h-4 text-primary" />
-                    </div>
-                    <h3 className="text-lg">Filters & Search</h3>
-                    {/*<div className="flex items-center bg-slate-900 px-2 rounded">
+                <TabsContent value="members" className="space-y-4">
+                  {/* Filters Section */}
+                  <Card className="p-6 bg-gradient-to-br from-muted/30 to-muted/10 shadow-sm">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
+                        <Filter className="w-4 h-4 text-primary" />
+                      </div>
+                      <h3 className="text-lg">Filters & Search</h3>
+                      {/*<div className="flex items-center bg-slate-900 px-2 rounded">
                       <Search size={16} />
                       <input
                         type="text"
@@ -210,88 +248,86 @@ export function Reports({ isDark, onToggleTheme }) {
                         className="bg-transparent p-1 text-sm outline-none"
                       />
                     </div>*/}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="ageGroup">Age Group</Label>
-                      <Select
-                        value={selectedAgeGroup}
-                        onValueChange={setSelectedAgeGroup}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Age Groups</SelectItem>
-                          <SelectItem value="Children">Children</SelectItem>
-                          <SelectItem value="Youth">Youth</SelectItem>
-                          <SelectItem value="Young Adult">Young Adult</SelectItem>
-                          <SelectItem value="Young Married">Young Married</SelectItem>
-                          <SelectItem value="Middle Adult">Middle Adult</SelectItem>
-                          <SelectItem value="Senior Adult">Senior Adult</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="member_status">Status</Label>
-                      <Select
-                        value={selectedStatus}
-                        onValueChange={setSelectedStatus}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dateFrom">Date From</Label>
-                      <Input
-                        id="dateFrom"
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dateTo">Date To</Label>
-                      <Input
-                        id="dateTo"
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <Button
-                        variant="outline"
-                        onClick={fetchMembers}
-                      >
-                        Apply Filters
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSearchTerm("");
-                          setSelectedGender("");
-                          setSelectedAgeGroup("all");
-                          setSelectedStatus("all");
-                          setStartDate("");
-                          setEndDate("");
-                        }}
-                      >
-                        Clear Filters
-                      </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="ageGroup">Age Group</Label>
+                        <Select
+                          value={selectedAgeGroup}
+                          onValueChange={setSelectedAgeGroup}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Age Groups</SelectItem>
+                            <SelectItem value="Children">Children</SelectItem>
+                            <SelectItem value="Youth">Youth</SelectItem>
+                            <SelectItem value="Young Adult">Young Adult</SelectItem>
+                            <SelectItem value="Young Married">Young Married</SelectItem>
+                            <SelectItem value="Middle Adult">Middle Adult</SelectItem>
+                            <SelectItem value="Senior Adult">Senior Adult</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="member_status">Status</Label>
+                        <Select
+                          value={selectedStatus}
+                          onValueChange={setSelectedStatus}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dateFrom">Date From</Label>
+                        <Input
+                          id="dateFrom"
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dateTo">Date To</Label>
+                        <Input
+                          id="dateTo"
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          variant="outline"
+                          onClick={fetchMembers}
+                        >
+                          Apply Filters
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setSearchTerm("");
+                            setSelectedGender("");
+                            setSelectedAgeGroup("all");
+                            setSelectedStatus("all");
+                            setStartDate("");
+                            setEndDate("");
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
 
+                      </div>
                     </div>
-                  </div>
-                </Card>
-
-                <TabsContent value="members" className="space-y-4">
+                  </Card>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4" />
@@ -406,6 +442,87 @@ export function Reports({ isDark, onToggleTheme }) {
                 </TabsContent>
 
                 <TabsContent value="attendance" className="space-y-4">
+                  {/* Filters */}
+                    <Card className="p-6 bg-gradient-to-br from-muted/30 to-muted/10 shadow-sm">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
+                          <Filter className="w-4 h-4 text-primary" />
+                        </div>
+                        <h3 className="text-lg">Filters & Search</h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="ageGroup">Age Group</Label>
+                          <Select
+                            value={filters.ageGroup}
+                            onValueChange={(value) => setFilters(prev => ({ ...prev, ageGroup: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Age Groups</SelectItem>
+                              <SelectItem value="Children">Children</SelectItem>
+                              <SelectItem value="Youth">Youth</SelectItem>
+                              <SelectItem value="Young Adult">Young Adult</SelectItem>
+                              <SelectItem value="Young Married">Young Married</SelectItem>
+                              <SelectItem value="Middle Adult">Middle Adult</SelectItem>
+                              <SelectItem value="Senior Adult">Senior Adult</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="memberStatus">Status</Label>
+                          <Select
+                            value={filters.memberStatus}
+                            onValueChange={(value) => setFilters(prev => ({ ...prev, memberStatus: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Status</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="dateFrom">Date From</Label>
+                          <Input
+                            id="dateFrom"
+                            type="date"
+                            value={filters.dateFrom}
+                            onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="dateTo">Date To</Label>
+                          <Input
+                            id="dateTo"
+                            type="date"
+                            value={filters.dateTo}
+                            onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="flex items-end gap-2">
+                          <Button variant="outline" onClick={fetchFilteredAttendance}>
+                            Apply Filters
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={clearFilters}
+                          >
+                            Clear Filters
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <BarChart3 className="w-4 h-4" />
@@ -427,7 +544,7 @@ export function Reports({ isDark, onToggleTheme }) {
                         <Users className="w-4 h-4 text-blue-500" />
                         <div>
                           <p className="text-sm text-muted-foreground">Total Records</p>
-                          <p>{members.length}</p>
+                          <p>{summary.totalCount}</p>
                         </div>
                       </div>
                     </Card>
@@ -436,7 +553,7 @@ export function Reports({ isDark, onToggleTheme }) {
                         <Users className="w-4 h-4 text-green-500" />
                         <div>
                           <p className="text-sm text-muted-foreground">Present</p>
-                          <p>{members.filter(r => r.status === 'Present').length}</p>
+                          <p> {summary.presentCount}</p>
                         </div>
                       </div>
                     </Card>
@@ -445,7 +562,7 @@ export function Reports({ isDark, onToggleTheme }) {
                         <Users className="w-4 h-4 text-red-500" />
                         <div>
                           <p className="text-sm text-muted-foreground">Absent</p>
-                          <p>{members.filter(r => r.status === 'Absent').length}</p>
+                          <p> {summary.absentCount}</p>
                         </div>
                       </div>
                     </Card>
@@ -455,9 +572,7 @@ export function Reports({ isDark, onToggleTheme }) {
                         <div>
                           <p className="text-sm text-muted-foreground">Attendance Rate</p>
                           <p>
-                            {members.length > 0
-                              ? Math.round((members.filter(r => r.status === 'Present').length / members.length) * 100)
-                              : 0}%
+                            {summary.rate}%
                           </p>
                         </div>
                       </div>
@@ -475,7 +590,7 @@ export function Reports({ isDark, onToggleTheme }) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {members.map((record, index) => (
+                        {records.map((record, index) => (
                           <TableRow key={index}>
                             <TableCell>{record.fullName}</TableCell>
                             <TableCell>{record.ageGroup}</TableCell>
