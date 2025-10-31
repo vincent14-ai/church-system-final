@@ -215,3 +215,52 @@ export async function generateMemberTemplate() {
   const buffer = await workbook.xlsx.writeBuffer();
   return buffer;
 }
+
+export async function generateAttendanceReport(attendance) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Attendance");
+
+  // Set up header row
+  worksheet.columns = [
+    { header: "Name", key: "fullName", width: 20 },
+    { header: "Age Group", key: "ageGroup", width: 20 },
+    { header: "Date", key: "date", width: 15 },
+    { header: "Status", key: "status", width: 10 },
+  ];
+
+  // Style header
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF1E293B" }, // slate-800
+  };
+  headerRow.alignment = { vertical: "middle", horizontal: "center" };
+  headerRow.height = 22;
+
+  // Borders
+  worksheet.eachRow({ includeEmpty: true }, (row) => {
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+  });
+
+  // Add rows
+  attendance.forEach((a) => {
+    const rowData = {
+      ...a,
+      status: a.status ? "Present" : "Absent",
+    };
+    worksheet.addRow(rowData);
+  });
+
+  // Return buffer for download
+  const buffer = await workbook.xlsx.writeBuffer();
+  return buffer;
+}

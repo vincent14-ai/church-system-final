@@ -36,8 +36,6 @@ export function Reports({ isDark, onToggleTheme }) {
   const [isUploading, setIsUploading] = useState(false);
 
   // Filter states
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedGender, setSelectedGender] = useState("");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [startDate, setStartDate] = useState("");
@@ -75,8 +73,6 @@ export function Reports({ isDark, onToggleTheme }) {
     try {
       const res = await axios.get("http://localhost:5000/api/members", {
         params: {
-          search: searchTerm || undefined,
-          gender: selectedGender || undefined,
           age_group: selectedAgeGroup || undefined,
           member_status: selectedStatus || undefined,
           date_from: startDate || undefined,
@@ -118,8 +114,6 @@ export function Reports({ isDark, onToggleTheme }) {
   const handleExportPost = async () => {
     try {
       const filters = {
-        search: searchTerm,
-        gender: selectedGender,
         age_group: selectedAgeGroup,
         member_status: selectedStatus,
         date_from: startDate,
@@ -147,6 +141,29 @@ export function Reports({ isDark, onToggleTheme }) {
       console.error("Export failed:", err);
     }
   };
+
+  const handleExportAttendance = async () => {
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/export/attendance/export",
+        filters,
+        { responseType: "blob" }
+      );
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "attendance_report.xlsx";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
+  };
+
 
   const handleExportTemplate = async () => {
     try {
@@ -325,8 +342,6 @@ export function Reports({ isDark, onToggleTheme }) {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            setSearchTerm("");
-                            setSelectedGender("");
                             setSelectedAgeGroup("all");
                             setSelectedStatus("all");
                             setStartDate("");
@@ -403,14 +418,13 @@ export function Reports({ isDark, onToggleTheme }) {
                               <TableCell>{member.willing_training ? "Yes" : "No"}</TableCell>
                               <TableCell>{member.households || "None"}</TableCell>
                               <TableCell>{member.invited_by || "None"}</TableCell>
-                              <TableCell><TableCell>
+                              <TableCell>
                                 {member.date_attended
                                   ? new Date(member.date_attended).toLocaleDateString("en-US", {
                                     year: "numeric",
                                     month: "short",
                                   })
                                   : "N/A"}
-                              </TableCell>
                               </TableCell>
                               <TableCell>{member.attending_cell_group ? "Yes" : "No"}</TableCell>
                               <TableCell>{member.cell_leader_name || "N/A"}</TableCell>
@@ -556,7 +570,7 @@ export function Reports({ isDark, onToggleTheme }) {
                       <h3>Attendance Report ({summary.totalCount} records)</h3>
                     </div>
                     <Button
-                      onClick={handleExportPost}
+                      onClick={handleExportAttendance}
                       className="flex items-center gap-2"
                     >
                       <Download className="w-4 h-4" />
@@ -617,22 +631,30 @@ export function Reports({ isDark, onToggleTheme }) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {currentAttendanceRows.map((record, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{record.fullName}</TableCell>
-                            <TableCell>{record.ageGroup}</TableCell>
-                            <TableCell>{new Date(record.date).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}</TableCell>
-                            <TableCell>
-                              <Badge variant={record.status === 'Present' ? 'default' : 'destructive'}>
-                                {record.status}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {currentAttendanceRows.length > 0 ? (
+                            currentAttendanceRows.map((record, index) => (
+                              <TableRow key={index}>
+                                <TableCell>{record.fullName}</TableCell>
+                                <TableCell>{record.ageGroup}</TableCell>
+                                <TableCell>{new Date(record.date).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}</TableCell>
+                                <TableCell>
+                                  <Badge variant={record.status === 'Present' ? 'default' : 'destructive'}>
+                                    {record.status}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                        ) : (
+                          <tr>
+                            <td colSpan="17" className="text-center p-4 text-slate-500 italic">
+                              No Records found
+                            </td>
+                          </tr>
+                        )}
                       </TableBody>
                     </Table>
                     {/* Pagination Controls */}
