@@ -124,6 +124,7 @@ export async function getMembers(filters = {}) {
     LEFT JOIN household_members hm ON m.member_id = hm.member_id
     ${whereSQL}
     GROUP BY m.member_id
+    ORDER BY m.last_name ASC, m.first_name ASC
   `, params);
 
 

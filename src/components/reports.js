@@ -8,6 +8,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationLink,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from './ui/pagination';
+import {
   FileText,
   Download,
   Upload,
@@ -38,11 +47,6 @@ export function Reports({ isDark, onToggleTheme }) {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
-  // Calculate pagination
-  const totalPages = Math.ceil(members.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const currentRows = members.slice(startIndex, startIndex + rowsPerPage);
-
   //attendance
   const [filters, setFilters] = useState({
     ageGroup: "all",
@@ -57,6 +61,14 @@ export function Reports({ isDark, onToggleTheme }) {
     totalCount: 0,
     rate: 0
   });
+
+  // Calculate pagination
+  const totalMemberPages = Math.ceil(members.length / rowsPerPage);
+  const totalAttendancePages = Math.ceil(records.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const currentMemberRows = members.slice(startIndex, startIndex + rowsPerPage);
+  const currentAttendanceRows = records.slice(startIndex, startIndex + rowsPerPage);
+
 
   // ✅ Fetch with filters
   const fetchMembers = async () => {
@@ -83,7 +95,6 @@ export function Reports({ isDark, onToggleTheme }) {
       const res = await axios.get("http://localhost:5000/api/attendance/filter", {
         params: filters
       });
-      console.log("📦 Fetched filtered data:", res.data);
       setRecords(res.data.records);
       setSummary(res.data.summary);
     } catch (err) {
@@ -371,15 +382,17 @@ export function Reports({ isDark, onToggleTheme }) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {currentRows.length > 0 ? (
-                          currentRows.map((member) => (
+                        {currentMemberRows.length > 0 ? (
+                          currentMemberRows.map((member) => (
                             <TableRow key={member.member_id}>
                               <TableCell>photo</TableCell>
-                              <TableCell>{member.first_name} {member.last_name}</TableCell>
+                              <TableCell>{member.last_name}, {member.first_name}</TableCell>
                               <TableCell>{member.marital_status}</TableCell>
-                              <TableCell>{member.date_of_birth
-                                ? new Date(member.date_of_birth).toLocaleDateString()
-                                : "N/A"}</TableCell>
+                              <TableCell>{new Date(member.date_of_birth).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}</TableCell>
                               <TableCell>{member.gender}</TableCell>
                               <TableCell>{member.contact_number}</TableCell>
                               <TableCell>{member.prev_church_attendee ? "Yes" : "No"}</TableCell>
@@ -390,7 +403,15 @@ export function Reports({ isDark, onToggleTheme }) {
                               <TableCell>{member.willing_training ? "Yes" : "No"}</TableCell>
                               <TableCell>{member.households || "None"}</TableCell>
                               <TableCell>{member.invited_by || "None"}</TableCell>
-                              <TableCell>{member.date_attended}</TableCell>
+                              <TableCell><TableCell>
+                                {member.date_attended
+                                  ? new Date(member.date_attended).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "short",
+                                  })
+                                  : "N/A"}
+                              </TableCell>
+                              </TableCell>
                               <TableCell>{member.attending_cell_group ? "Yes" : "No"}</TableCell>
                               <TableCell>{member.cell_leader_name || "N/A"}</TableCell>
                               <TableCell>{member.church_ministry || "None"}</TableCell>
@@ -415,118 +436,124 @@ export function Reports({ isDark, onToggleTheme }) {
                     </Table>
                     {/* Pagination Controls */}
                     {members.length > rowsPerPage && (
-                      <div className="flex items-center justify-between pt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                          disabled={currentPage === 1}
-                        >
-                          Previous
-                        </Button>
+                      <Pagination className="pt-4">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                              className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
+                            />
+                          </PaginationItem>
 
-                        <span className="text-sm text-muted-foreground">
-                          Page {currentPage} of {totalPages}
-                        </span>
+                          {Array.from({ length: totalMemberPages }, (_, index) => (
+                            <PaginationItem key={index}>
+                              <PaginationLink
+                                isActive={currentPage === index + 1}
+                                onClick={() => setCurrentPage(index + 1)}
+                              >
+                                {index + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
 
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next
-                        </Button>
-                      </div>
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalMemberPages))}
+                              className={currentPage === totalMemberPages ? "opacity-50 pointer-events-none" : ""}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
                     )}
-
                   </Card>
                 </TabsContent>
 
                 <TabsContent value="attendance" className="space-y-4">
                   {/* Filters */}
-                    <Card className="p-6 bg-gradient-to-br from-muted/30 to-muted/10 shadow-sm">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-                          <Filter className="w-4 h-4 text-primary" />
-                        </div>
-                        <h3 className="text-lg">Filters & Search</h3>
+                  <Card className="p-6 bg-gradient-to-br from-muted/30 to-muted/10 shadow-sm">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
+                        <Filter className="w-4 h-4 text-primary" />
+                      </div>
+                      <h3 className="text-lg">Filters & Search</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="ageGroup">Age Group</Label>
+                        <Select
+                          value={filters.ageGroup}
+                          onValueChange={(value) => setFilters(prev => ({ ...prev, ageGroup: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Age Groups</SelectItem>
+                            <SelectItem value="Children">Children</SelectItem>
+                            <SelectItem value="Youth">Youth</SelectItem>
+                            <SelectItem value="Young Adult">Young Adult</SelectItem>
+                            <SelectItem value="Young Married">Young Married</SelectItem>
+                            <SelectItem value="Middle Adult">Middle Adult</SelectItem>
+                            <SelectItem value="Senior Adult">Senior Adult</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="ageGroup">Age Group</Label>
-                          <Select
-                            value={filters.ageGroup}
-                            onValueChange={(value) => setFilters(prev => ({ ...prev, ageGroup: value }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Age Groups</SelectItem>
-                              <SelectItem value="Children">Children</SelectItem>
-                              <SelectItem value="Youth">Youth</SelectItem>
-                              <SelectItem value="Young Adult">Young Adult</SelectItem>
-                              <SelectItem value="Young Married">Young Married</SelectItem>
-                              <SelectItem value="Middle Adult">Middle Adult</SelectItem>
-                              <SelectItem value="Senior Adult">Senior Adult</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="memberStatus">Status</Label>
-                          <Select
-                            value={filters.memberStatus}
-                            onValueChange={(value) => setFilters(prev => ({ ...prev, memberStatus: value }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Status</SelectItem>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="dateFrom">Date From</Label>
-                          <Input
-                            id="dateFrom"
-                            type="date"
-                            value={filters.dateFrom}
-                            onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="dateTo">Date To</Label>
-                          <Input
-                            id="dateTo"
-                            type="date"
-                            value={filters.dateTo}
-                            onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                          />
-                        </div>
-
-                        <div className="flex items-end gap-2">
-                          <Button variant="outline" onClick={fetchFilteredAttendance}>
-                            Apply Filters
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={clearFilters}
-                          >
-                            Clear Filters
-                          </Button>
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="memberStatus">Status</Label>
+                        <Select
+                          value={filters.memberStatus}
+                          onValueChange={(value) => setFilters(prev => ({ ...prev, memberStatus: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                    </Card>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="dateFrom">Date From</Label>
+                        <Input
+                          id="dateFrom"
+                          type="date"
+                          value={filters.dateFrom}
+                          onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="dateTo">Date To</Label>
+                        <Input
+                          id="dateTo"
+                          type="date"
+                          value={filters.dateTo}
+                          onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                        />
+                      </div>
+
+                      <div className="flex items-end gap-2">
+                        <Button variant="outline" onClick={fetchFilteredAttendance}>
+                          Apply Filters
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={clearFilters}
+                        >
+                          Clear Filters
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <BarChart3 className="w-4 h-4" />
-                      <h3>Attendance Report ({members.length} records)</h3>
+                      <h3>Attendance Report ({summary.totalCount} records)</h3>
                     </div>
                     <Button
                       onClick={handleExportPost}
@@ -590,11 +617,15 @@ export function Reports({ isDark, onToggleTheme }) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {records.map((record, index) => (
+                        {currentAttendanceRows.map((record, index) => (
                           <TableRow key={index}>
                             <TableCell>{record.fullName}</TableCell>
                             <TableCell>{record.ageGroup}</TableCell>
-                            <TableCell>{record.date}</TableCell>
+                            <TableCell>{new Date(record.date).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}</TableCell>
                             <TableCell>
                               <Badge variant={record.status === 'Present' ? 'default' : 'destructive'}>
                                 {record.status}
@@ -604,6 +635,37 @@ export function Reports({ isDark, onToggleTheme }) {
                         ))}
                       </TableBody>
                     </Table>
+                    {/* Pagination Controls */}
+                    {records.length > rowsPerPage && (
+                      <Pagination className="pt-4">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                              className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
+                            />
+                          </PaginationItem>
+
+                          {Array.from({ length: totalAttendancePages }, (_, index) => (
+                            <PaginationItem key={index}>
+                              <PaginationLink
+                                isActive={currentPage === index + 1}
+                                onClick={() => setCurrentPage(index + 1)}
+                              >
+                                {index + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalAttendancePages))}
+                              className={currentPage === totalAttendancePages ? "opacity-50 pointer-events-none" : ""}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    )}
                   </Card>
                 </TabsContent>
 
