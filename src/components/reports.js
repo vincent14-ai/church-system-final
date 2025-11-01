@@ -29,11 +29,22 @@ import {
 import { motion } from 'framer-motion';
 import { ThemeToggle } from './theme-toggle';
 import axios from "axios";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
+
 
 export function Reports({ isDark, onToggleTheme }) {
   const [activeTab, setActiveTab] = useState('members');
   const [members, setMembers] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [currentRows, setCurrentRows] = useState([]);
+  const [editingMember, setEditingMember] = useState(null);
 
   // Filter states
   const [selectedAgeGroup, setSelectedAgeGroup] = useState("all");
@@ -41,6 +52,7 @@ export function Reports({ isDark, onToggleTheme }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const fileInputRef = useRef(null);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
@@ -48,7 +60,7 @@ export function Reports({ isDark, onToggleTheme }) {
   //attendance
   const [filters, setFilters] = useState({
     ageGroup: "all",
-    memberStatus: "all",
+    status: "all",
     dateFrom: "",
     dateTo: ""
   });
@@ -66,6 +78,11 @@ export function Reports({ isDark, onToggleTheme }) {
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentMemberRows = members.slice(startIndex, startIndex + rowsPerPage);
   const currentAttendanceRows = records.slice(startIndex, startIndex + rowsPerPage);
+
+  //update
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [showEditModal, setShowEditModal] = useState(false);
 
 
   // ✅ Fetch with filters
@@ -107,7 +124,7 @@ export function Reports({ isDark, onToggleTheme }) {
   }, []);
 
   const clearFilters = () => {
-    setFilters({ ageGroup: "all", memberStatus: "all", dateFrom: "", dateTo: "" });
+    setFilters({ ageGroup: "all", status: "all", dateFrom: "", dateTo: "" });
     fetchFilteredAttendance();
   };
 
@@ -164,7 +181,6 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
-
   const handleExportTemplate = async () => {
     try {
 
@@ -215,6 +231,70 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
+  const handleEdit = async (member_id) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/members/${member_id}`);
+      setEditFormData(res.data); // pre-fill form
+      setSelectedMember(member_id);
+      setShowEditModal(true); // open your modal or form
+    } catch (error) {
+      console.error("Failed to fetch member for edit:", error);
+      toast.error("Unable to load member details");
+    }
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSubmit = async () => {
+    try {
+      if (!selectedMember) return toast.error("No member selected");
+
+      await axios.put(
+        `http://localhost:5000/api/members/${selectedMember}`,
+        editFormData
+      );
+
+      toast.success("Member updated successfully!");
+
+      // Optionally refresh your table
+      setCurrentRows((prev) =>
+        prev.map((m) =>
+          m.member_id === selectedMember ? { ...m, ...editFormData } : m
+        )
+      );
+
+      setShowEditModal(false);
+      setSelectedMember(null);
+    } catch (error) {
+      console.error("Update failed:", error);
+      toast.error("Failed to update member. Please try again.");
+    }
+  };
+
+
+  // Handle Delete
+  const handleDelete = async (member_id) => {
+    const confirmed = window.confirm("Are you sure you want to delete this member?");
+    if (!confirmed) return;
+
+    try {
+      const res = await axios.delete(`http://localhost:5000/api/members/${member_id}`);
+      fetchMembers();
+      if (res.status !== 200) throw new Error("Failed to delete member");
+
+      // Remove deleted member from state
+      setCurrentRows((prev) => prev.filter((m) => m.member_id !== member_id));
+
+      toast.success("Member deleted successfully!");
+      
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete member. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -372,6 +452,7 @@ export function Reports({ isDark, onToggleTheme }) {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead></TableHead>
                           <TableHead>Photo</TableHead>
                           <TableHead>Name</TableHead>
                           <TableHead>Marital Status</TableHead>
@@ -400,6 +481,14 @@ export function Reports({ isDark, onToggleTheme }) {
                         {currentMemberRows.length > 0 ? (
                           currentMemberRows.map((member) => (
                             <TableRow key={member.member_id}>
+                              <TableCell className="space-x-2">
+                                <Button variant="outline" size="sm" onClick={() => handleEdit(member.member_id)}>
+                                  Edit
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => handleDelete(member.member_id)}>
+                                  Delete
+                                </Button>
+                              </TableCell>
                               <TableCell>photo</TableCell>
                               <TableCell>{member.last_name}, {member.first_name}</TableCell>
                               <TableCell>{member.marital_status}</TableCell>
@@ -515,18 +604,18 @@ export function Reports({ isDark, onToggleTheme }) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="memberStatus">Status</Label>
+                        <Label htmlFor="status">Status</Label>
                         <Select
-                          value={filters.memberStatus}
-                          onValueChange={(value) => setFilters(prev => ({ ...prev, memberStatus: value }))}
+                          value={filters.status}
+                          onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="present">Present</SelectItem>
+                            <SelectItem value="absent">Absent</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -632,22 +721,24 @@ export function Reports({ isDark, onToggleTheme }) {
                       </TableHeader>
                       <TableBody>
                         {currentAttendanceRows.length > 0 ? (
-                            currentAttendanceRows.map((record, index) => (
-                              <TableRow key={index}>
-                                <TableCell>{record.fullName}</TableCell>
-                                <TableCell>{record.ageGroup}</TableCell>
-                                <TableCell>{new Date(record.date).toLocaleDateString("en-US", {
-                                  year: "numeric",
-                                  month: "short",
-                                  day: "numeric",
-                                })}</TableCell>
-                                <TableCell>
-                                  <Badge variant={record.status === 'Present' ? 'default' : 'destructive'}>
-                                    {record.status}
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            ))
+                          currentAttendanceRows.map((record, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{record.fullName}</TableCell>
+                              <TableCell>{record.ageGroup}</TableCell>
+                              <TableCell>{new Date(record.date).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}</TableCell>
+                              <TableCell>
+                                <Badge variant={record.status === 'Present' ? 'destructive' : 'default'}>
+                                  {record.status
+                                    ? record.status.charAt(0).toUpperCase() + record.status.slice(1).toLowerCase()
+                                    : "N/A"}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))
                         ) : (
                           <tr>
                             <td colSpan="17" className="text-center p-4 text-slate-500 italic">
@@ -763,6 +854,34 @@ export function Reports({ isDark, onToggleTheme }) {
           </Card>
         </motion.div>
       </div>
+      {/* Edit Member Modal */}
+      {showEditModal && (
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Member</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Input
+                name="first_name"
+                value={editFormData.first_name || ""}
+                onChange={handleEditChange}
+                placeholder="First Name"
+              />
+              <Input
+                name="last_name"
+                value={editFormData.last_name || ""}
+                onChange={handleEditChange}
+                placeholder="Last Name"
+              />
+              {/* add more fields */}
+            </div>
+            <DialogFooter>
+              <Button onClick={handleEditSubmit}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

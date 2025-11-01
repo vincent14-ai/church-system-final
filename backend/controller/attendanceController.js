@@ -31,7 +31,7 @@ export async function readFilteredAttendance(req, res) {
   try {
     const filters = {
       ageGroup: req.query.ageGroup || "all",
-      memberStatus: req.query.memberStatus || "all",
+      status: req.query.status || "all",
       dateFrom: req.query.dateFrom || null,
       dateTo: req.query.dateTo || null
     };

@@ -136,3 +136,72 @@ export async function getMembersForAttendance() {
 
   return rows;
 }
+
+// 🔹 Get a single member (for edit form)
+export async function getMemberByIdService(member_id) {
+  const [rows] = await db.query(
+    `
+    SELECT 
+      m.member_id, m.first_name, m.last_name, m.marital_status, m.date_of_birth, m.gender, 
+      m.contact_number, m.prev_church_attendee, m.address, m.age_group, m.prev_church, m.invited_by, 
+      m.date_attended, m.attending_cell_group, m.cell_leader_name, m.church_ministry, 
+      m.consolidation, m.willing_training, m.reason, m.water_baptized, m.member_status, m.created_at,
+      GROUP_CONCAT(DISTINCT CONCAT(st.training_type, ' (', st.year, ')') SEPARATOR ', ') AS trainings,
+      GROUP_CONCAT(DISTINCT CONCAT(hm.name, ' - ', hm.relationship, ' (', hm.date_of_birth, ')') SEPARATOR '; ') AS households
+    FROM member_data m
+    LEFT JOIN spiritual_trainings st ON m.member_id = st.member_id
+    LEFT JOIN household_members hm ON m.member_id = hm.member_id
+    WHERE m.member_id = ?
+    `,
+    [member_id]
+  );
+
+  return rows[0];
+}
+
+// 🔹 Update member info
+export async function updateMemberService(member_id, updatedData) {
+  const [result] = await db.query(
+    `
+    UPDATE member_data
+    SET first_name = ?, last_name = ?, marital_status = ?, date_of_birth = ?, gender = ?, 
+        contact_number = ?, prev_church_attendee = ?, address = ?, age_group = ?, prev_church = ?, 
+        invited_by = ?, date_attended = ?, attending_cell_group = ?, cell_leader_name = ?, 
+        church_ministry = ?, consolidation = ?, willing_training = ?, reason = ?, 
+        water_baptized = ?, member_status = ?
+    WHERE member_id = ?
+    `,
+    [
+      updatedData.first_name,
+      updatedData.last_name,
+      updatedData.marital_status,
+      updatedData.date_of_birth,
+      updatedData.gender,
+      updatedData.contact_number,
+      updatedData.prev_church_attendee,
+      updatedData.address,
+      updatedData.age_group,
+      updatedData.prev_church,
+      updatedData.invited_by,
+      updatedData.date_attended,
+      updatedData.attending_cell_group,
+      updatedData.cell_leader_name,
+      updatedData.church_ministry,
+      updatedData.consolidation,
+      updatedData.willing_training,
+      updatedData.reason,
+      updatedData.water_baptized,
+      updatedData.member_status,
+      member_id,
+    ]
+  );
+
+  return result;
+}
+
+export async function deleteMemberService(member_id) {
+  await db.query("DELETE FROM spiritual_trainings WHERE member_id = ?", [member_id]);
+  await db.query("DELETE FROM household_members WHERE member_id = ?", [member_id]);
+  const [result] = await db.query("DELETE FROM member_data WHERE member_id = ?", [member_id]);
+  return result;
+}

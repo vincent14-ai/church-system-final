@@ -1,4 +1,4 @@
-import { addMember, getMembers, getMembersForAttendance } from "../service/memberService.js";
+import { addMember, getMembers, getMembersForAttendance, deleteMemberService, getMemberByIdService, updateMemberService } from "../service/memberService.js";
 
 export async function createMember(req, res) {
   try {
@@ -44,5 +44,51 @@ export async function readMembersForAttendance(req, res) {
   } catch (err) {
     console.error("Error fetching members:", err);
     res.status(500).json({ error: "Failed to fetch members" });
+  }
+}
+
+// 🔹 Get member
+export async function getMemberById(req, res) {
+  try {
+    const { member_id } = req.params;
+    const member = await getMemberByIdService(member_id);
+
+    if (!member) return res.status(404).json({ message: "Member not found" });
+    res.json(member);
+  } catch (error) {
+    console.error("Error fetching member:", error);
+    res.status(500).json({ message: "Failed to fetch member" });
+  }
+}
+
+// 🔹 Update member
+export async function updateMember(req, res) {
+  try {
+    const { member_id } = req.params;
+    const result = await updateMemberService(member_id, req.body);
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Member not found" });
+
+    res.json({ message: "Member updated successfully" });
+  } catch (error) {
+    console.error("Error updating member:", error);
+    res.status(500).json({ message: "Failed to update member" });
+  }
+}
+
+// 🔹 Delete member
+export async function deleteMember(req, res) {
+  try {
+    const { member_id } = req.params;
+    const result = await deleteMemberService(member_id);
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Member not found" });
+
+    res.json({ message: "Member deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting member:", error);
+    res.status(500).json({ message: "Failed to delete member" });
   }
 }

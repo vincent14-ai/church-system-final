@@ -15,6 +15,8 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Toaster } from "./components/ui/sonner";
+
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -304,6 +306,8 @@ export default function App() {
           </AnimatePresence>
         </div>
       </div>
+      {/*Global Toaster*/}
+      <Toaster richColors position="top-right" />
     </div>
   );
 }
