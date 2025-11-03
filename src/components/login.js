@@ -29,7 +29,7 @@ export function Login({ onLogin, isDark, onToggleTheme }) {
       const data = await res.json();
 
       if (res.ok) {
-        // backend sends back role, e.g. "personal"
+        // backend sends back role, ex. "personal"
         onLogin(email, data.role);
       } else {
         setError(data.message || "Invalid email or password");

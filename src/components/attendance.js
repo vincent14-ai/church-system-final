@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { ThemeToggle } from './theme-toggle';
 import axios from "axios";
 
+// Function to normalize date to 'YYYY-MM-DD' format
 const normalizeDate = (date) => {
   const d = new Date(date);
   const year = d.getFullYear();
@@ -31,7 +32,7 @@ export function Attendance({ isDark, onToggleTheme }) {
     totalCount: 0
   });
 
-  // Fetch all members once
+  // Fetch all members
   useEffect(() => {
     const fetchMembers = async () => {
       try {

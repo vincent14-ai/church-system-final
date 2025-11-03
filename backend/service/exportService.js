@@ -15,7 +15,7 @@ export async function generateMemberReport(members) {
     { header: "Address", key: "address", width: 25 },
     { header: "Contact No.", key: "contact_number", width: 20 },
     { header: "Previous Church Attendee?", key: "prev_church_attendee", width: 20 },
-    { header: "Previous Church Name", key: "prev_church_name", width: 20 },
+    { header: "Previous Church Name", key: "prev_church", width: 20 },
     { header: "Invited By", key: "invited_by", width: 20 },
     { header: "Date Attendded", key: "date_attended", width: 20 },
     { header: "Attending Cellgroup?", key: "attending_cell_group", width: 30 },
@@ -89,7 +89,6 @@ export async function generateMemberTemplate() {
     "Middle Adult",
     "Senior Adult",
   ];
-  listSheet.getColumn("D").values = ["Ministry", "Content", "Ushering", "Media"];
   listSheet.getColumn("E").values = ["Yes/No", "Yes", "No"];
   listSheet.getColumn("F").values = ["Member Status", "Active", "Inactive"];
 
@@ -179,13 +178,6 @@ export async function generateMemberTemplate() {
       showErrorMessage: true,
       errorTitle: "Invalid Age Group",
       error: "Select a valid age group.",
-    };
-    worksheet.getCell(`O${row}`).dataValidation = {
-      type: "list",
-      formulae: ["=Lists!$D$2:$D$4"],
-      showErrorMessage: true,
-      errorTitle: "Invalid Ministry",
-      error: "Select a valid ministry.",
     };
 
     // YES/NO dropdowns (for all boolean fields)

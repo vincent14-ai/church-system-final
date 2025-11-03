@@ -73,7 +73,6 @@ export async function getAttendanceSummaryByDate(date) {
 export async function getFilteredAttendance(filters) {
   const { ageGroup, status, dateFrom, dateTo } = filters;
 
-  // Build dynamic WHERE conditions
   const whereClauses = [];
   const params = [];
 

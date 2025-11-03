@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Textarea } from './ui/textarea';
 import {
   Pagination,
   PaginationContent,
@@ -85,7 +86,7 @@ export function Reports({ isDark, onToggleTheme }) {
   const [showEditModal, setShowEditModal] = useState(false);
 
 
-  // ✅ Fetch with filters
+  // Fetch with filtered members
   const fetchMembers = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/members", {
@@ -103,6 +104,7 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
+  // Fetch with filtered attendance
   const fetchFilteredAttendance = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/attendance/filter", {
@@ -115,6 +117,7 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
+  // Initial fetch
   useEffect(() => {
     fetchMembers();
   }, []);
@@ -123,11 +126,13 @@ export function Reports({ isDark, onToggleTheme }) {
     fetchFilteredAttendance();
   }, []);
 
+  // Clear attendance filters
   const clearFilters = () => {
     setFilters({ ageGroup: "all", status: "all", dateFrom: "", dateTo: "" });
     fetchFilteredAttendance();
   };
 
+  //export members report
   const handleExportPost = async () => {
     try {
       const filters = {
@@ -159,6 +164,7 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
+  //export attendance report
   const handleExportAttendance = async () => {
     try {
       const res = await axios.post(
@@ -181,6 +187,7 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
+  //export member template
   const handleExportTemplate = async () => {
     try {
 
@@ -205,6 +212,7 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
+  // Import members
   const handleImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -231,6 +239,7 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
+  //edit member
   const handleEdit = async (member_id) => {
     try {
       const res = await axios.get(`http://localhost:5000/api/members/${member_id}`);
@@ -256,10 +265,11 @@ export function Reports({ isDark, onToggleTheme }) {
         `http://localhost:5000/api/members/${selectedMember}`,
         editFormData
       );
+      fetchMembers();
 
       toast.success("Member updated successfully!");
 
-      // Optionally refresh your table
+      // Update local state
       setCurrentRows((prev) =>
         prev.map((m) =>
           m.member_id === selectedMember ? { ...m, ...editFormData } : m
@@ -275,7 +285,7 @@ export function Reports({ isDark, onToggleTheme }) {
   };
 
 
-  // Handle Delete
+  // delete member
   const handleDelete = async (member_id) => {
     const confirmed = window.confirm("Are you sure you want to delete this member?");
     if (!confirmed) return;
@@ -285,11 +295,11 @@ export function Reports({ isDark, onToggleTheme }) {
       fetchMembers();
       if (res.status !== 200) throw new Error("Failed to delete member");
 
-      // Remove deleted member from state
+      // Remove deleted member from local state
       setCurrentRows((prev) => prev.filter((m) => m.member_id !== member_id));
 
       toast.success("Member deleted successfully!");
-      
+
     } catch (error) {
       console.error("Delete error:", error);
       toast.error("Failed to delete member. Please try again.");
@@ -398,7 +408,7 @@ export function Reports({ isDark, onToggleTheme }) {
                         <Label htmlFor="dateFrom">Date From</Label>
                         <Input
                           id="dateFrom"
-                          type="date"
+                          type="month"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
                         />
@@ -407,7 +417,7 @@ export function Reports({ isDark, onToggleTheme }) {
                         <Label htmlFor="dateTo">Date To</Label>
                         <Input
                           id="dateTo"
-                          type="date"
+                          type="month"
                           value={endDate}
                           onChange={(e) => setEndDate(e.target.value)}
                         />
@@ -809,7 +819,7 @@ export function Reports({ isDark, onToggleTheme }) {
                           disabled={isUploading}
                         >
                           <Upload className="w-4 h-4 mr-2" />
-                          {isUploading ? "Uploading..." : "Import File"}
+                          {isUploading ? "Uploading..." : "Import Members File"}
                         </Button>
 
                       </div>
@@ -862,6 +872,7 @@ export function Reports({ isDark, onToggleTheme }) {
               <DialogTitle>Edit Member</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
+              {/* First & Last Name */}
               <Input
                 name="first_name"
                 value={editFormData.first_name || ""}
@@ -874,7 +885,199 @@ export function Reports({ isDark, onToggleTheme }) {
                 onChange={handleEditChange}
                 placeholder="Last Name"
               />
-              {/* add more fields */}
+
+              {/* Marital Status */}
+              <Select
+                value={editFormData.marital_status || ""}
+                onValueChange={(value) =>
+                  setEditFormData((prev) => ({ ...prev, marital_status: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select marital status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Single">Single</SelectItem>
+                  <SelectItem value="Married">Married</SelectItem>
+                  <SelectItem value="Divorced">Divorced</SelectItem>
+                  <SelectItem value="Widowed">Widowed</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Date of Birth */}
+              <Input
+                id="date_of_birth"
+                name="date_of_birth"
+                type="date"
+                value={editFormData.date_of_birth || ""}
+                onChange={handleEditChange}
+              />
+
+              {/* Gender */}
+              <Select
+                name="gender"
+                value={editFormData.gender || ""}
+                onValueChange={(value) =>
+                  setEditFormData((prev) => ({ ...prev, gender: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="M">Male</SelectItem>
+                  <SelectItem value="F">Female</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Age Group (read only) */}
+              <Input
+                name="age_group"
+                value={editFormData.age_group || ""}
+                readOnly
+                className="bg-muted"
+              />
+
+              {/* Contact Number */}
+              <Input
+                id="contact_number"
+                name="contact_number"
+                value={editFormData.contact_number || ""}
+                onChange={handleEditChange}
+                required
+              />
+
+              {/* Address */}
+              <Textarea
+                id="address"
+                name="address"
+                value={editFormData.address || ""}
+                onChange={handleEditChange}
+                required
+              />
+
+              {/* Invited By */}
+              <Input
+                id="invited_by"
+                name="invited_by"
+                value={editFormData.invited_by || ""}
+                onChange={handleEditChange}
+              />
+
+              {/* Date Attended */}
+              <Input
+                id="date_attended"
+                name="date_attended"
+                type="month"
+                value={editFormData.date_attended || ""}
+                onChange={handleEditChange}
+              />
+
+              {/* Church Ministry */}
+              <Select
+                name="church_ministry"
+                value={editFormData.church_ministry || ""}
+                onValueChange={(value) =>
+                  setEditFormData((prev) => ({ ...prev, church_ministry: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select ministry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Media">Media</SelectItem>
+                  <SelectItem value="Praise Team">Praise Team</SelectItem>
+                  <SelectItem value="Content Writer">Content Writer</SelectItem>
+                  <SelectItem value="Ushering">Ushering</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Attending Cell Group */}
+              <Select
+                name="attending_cell_group"
+                value={String(editFormData.attending_cell_group ?? "")}
+                onValueChange={(value) =>
+                  setEditFormData((prev) => ({
+                    ...prev,
+                    attending_cell_group: Number(value),
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Yes</SelectItem>
+                  <SelectItem value="0">No</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {editFormData.attending_cell_group === 1 && (
+                <div className="space-y-2">
+                  <Label htmlFor="cell_leader_name">Cell Leader's Name</Label>
+                  <Input
+                    id="cell_leader_name"
+                    name="cell_leader_name"
+                    value={editFormData.cell_leader_name || ""}
+                    onChange={handleEditChange}
+                  />
+                </div>
+              )}
+
+              {/* Consolidation */}
+              <Input
+                id="consolidation"
+                name="consolidation"
+                value={editFormData.consolidation || ""}
+                onChange={handleEditChange}
+                className="h-11 bg-input-background shadow-sm"
+                required
+              />
+
+              {/* Reason */}
+              <Input
+                id="reason"
+                name="reason"
+                value={editFormData.reason || ""}
+                onChange={handleEditChange}
+                className="h-11 bg-input-background shadow-sm"
+                required
+              />
+
+              {/* Water Baptized */}
+              <Select
+                value={String(editFormData.water_baptized ?? "")}
+                onValueChange={(value) =>
+                  setEditFormData((prev) => ({
+                    ...prev,
+                    water_baptized: Number(value),
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Yes</SelectItem>
+                  <SelectItem value="0">No</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Member Status */}
+              <Select
+                value={editFormData.member_status || ""}
+                onValueChange={(value) =>
+                  setEditFormData((prev) => ({ ...prev, member_status: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button onClick={handleEditSubmit}>Save Changes</Button>

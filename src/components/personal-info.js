@@ -12,6 +12,7 @@ import { Camera, Plus, Trash2, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from './theme-toggle';
 import axios from 'axios';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "./ui/dropdown-menu";
 
 export function PersonalInfo({ isDark, onToggleTheme }) {
   const [showCamera, setShowCamera] = useState(false);
@@ -27,8 +28,19 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
       willing_training: false,
     },
   });
-
   const [message, setMessage] = useState("");
+  const ministries = ["Media", "Praise Team", "Content Writer", "Ushering"];
+
+  const toggleMinistry = (ministry) => {
+    setData((prev) => {
+      const current = prev.church_ministry || [];
+      const isSelected = current.includes(ministry);
+      const updated = isSelected
+        ? current.filter((m) => m !== ministry)
+        : [...current, ministry];
+      return { ...prev, church_ministry: updated };
+    });
+  };
 
   // generic input handler
   const handleChange = (e) => {
@@ -36,6 +48,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
     setData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // calculate age group based on DOB and marital status
   const calculateAgeGroup = (date_of_birth, marital_status) => {
     if (!date_of_birth) return '';
 
@@ -52,6 +65,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
     return 'Senior Adult';
   };
 
+  // household members handlers
   const addHouseholdMember = () => {
     const newMember = {
       id: Date.now().toString(),
@@ -65,6 +79,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
     }));
   };
 
+  // remove household member
   const removeHouseholdMember = (id) => {
     setData(prev => ({
       ...prev,
@@ -72,6 +87,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
     }));
   };
 
+  // update household member
   const updateHouseholdMember = (id, field, value) => {
     setData(prev => ({
       ...prev,
@@ -81,18 +97,27 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
     }));
   };
 
+  // spiritual trainings options
   const trainings = ["Life Class", "SOL 1", "SOL 2", "SOL 3"];
 
   const handlePhotoCapture = (imageDataUrl) => {
     setData(prev => ({ ...prev, photo: imageDataUrl }));
   };
 
+  // form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Personal Info Data:', data);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/members", data);
+      const payload = {
+        ...data,
+        church_ministry: data.church_ministry?.join(", ") || "", // Convert to string
+      };
+
+      const res = await axios.post("http://localhost:5000/api/members", payload, {
+        headers: { "Content-Type": "application/json" },
+      });
 
       setMessage(`Member added with id ${res.data.id}`);
       setData({
@@ -107,6 +132,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
     }
   };
 
+  // update age group when DOB or marital status changes
   useEffect(() => {
     const group = calculateAgeGroup(data.date_of_birth, data.marital_status);
     setData(prev => ({ ...prev, age_group: group }));
@@ -392,24 +418,27 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="church_ministry">Church Ministry</Label>
-                    <Select
-                      name="church_ministry"
-                      value={data.church_ministry}
-                      onValueChange={(value) =>
-                        setData((prev) => ({ ...prev, church_ministry: value }))
-                      }
-                      className="w-full p-2 rounded-md bg-slate-900 border border-slate-700"
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select ministry" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Media">Media</SelectItem>
-                        <SelectItem value="Praise Team">Praise Team</SelectItem>
-                        <SelectItem value="Content Writer">Content Writer</SelectItem>
-                        <SelectItem value="Ushering">Ushering</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between">
+                          {data.church_ministry?.length
+                            ? data.church_ministry.join(" - ")
+                            : "Select ministry"}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56">
+                        {ministries.map((ministry) => (
+                          <DropdownMenuCheckboxItem
+                            key={ministry}
+                            checked={data.church_ministry?.includes(ministry)}
+                            onCheckedChange={() => toggleMinistry(ministry)}
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            {ministry}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   <Label>Cellgroup Member?</Label>
                   <Select
@@ -516,14 +545,22 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="consolidation" className="text-sm">Consolidation</Label>
-                    <Input
-                      id="consolidation"
+                    <Select
                       name="consolidation"
                       value={data.consolidation}
-                      onChange={handleChange}
-                      className="h-11 bg-input-background shadow-sm"
-                      required
-                    />
+                      onValueChange={(value) =>
+                        setData((prev) => ({ ...prev, consolidation: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Yes">Yes</SelectItem>
+                        <SelectItem value="No">No</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="reason" className="text-sm">Reason</Label>

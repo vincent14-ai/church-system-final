@@ -26,7 +26,7 @@ export async function importMembersFromExcel(req, res) {
     function normalizeDate(value) {
       if (!value) return null;
 
-      // If Excel gives you a Date object (sometimes it does!)
+      // If Excel gives a Date object 
       if (value instanceof Date && !isNaN(value)) {
         return value.toISOString().split("T")[0];
       }
