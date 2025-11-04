@@ -161,43 +161,93 @@ export async function getMemberByIdService(member_id) {
 
 // 🔹 Update member info
 export async function updateMemberService(member_id, updatedData) {
-  const [result] = await db.query(
-    `
-    UPDATE member_data
-    SET first_name = ?, last_name = ?, marital_status = ?, date_of_birth = ?, gender = ?, 
-        contact_number = ?, prev_church_attendee = ?, address = ?, age_group = ?, prev_church = ?, 
-        invited_by = ?, date_attended = ?, attending_cell_group = ?, cell_leader_name = ?, 
-        church_ministry = ?, consolidation = ?, willing_training = ?, reason = ?, 
-        water_baptized = ?, member_status = ?
-    WHERE member_id = ?
-    `,
-    [
-      updatedData.first_name,
-      updatedData.last_name,
-      updatedData.marital_status,
-      updatedData.date_of_birth,
-      updatedData.gender,
-      updatedData.contact_number,
-      updatedData.prev_church_attendee,
-      updatedData.address,
-      updatedData.age_group,
-      updatedData.prev_church,
-      updatedData.invited_by,
-      updatedData.date_attended,
-      updatedData.attending_cell_group,
-      updatedData.cell_leader_name,
-      updatedData.church_ministry,
-      updatedData.consolidation,
-      updatedData.willing_training,
-      updatedData.reason,
-      updatedData.water_baptized,
-      updatedData.member_status,
-      member_id,
-    ]
-  );
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
 
-  return result;
+    // 1️⃣ Update main member_data table
+    await conn.query(
+      `
+      UPDATE member_data
+      SET first_name = ?, last_name = ?, marital_status = ?, date_of_birth = ?, gender = ?, 
+          contact_number = ?, prev_church_attendee = ?, address = ?, age_group = ?, prev_church = ?, 
+          invited_by = ?, date_attended = ?, attending_cell_group = ?, cell_leader_name = ?, 
+          church_ministry = ?, consolidation = ?, willing_training = ?, reason = ?, 
+          water_baptized = ?, member_status = ?
+      WHERE member_id = ?
+      `,
+      [
+        updatedData.first_name,
+        updatedData.last_name,
+        updatedData.marital_status,
+        updatedData.date_of_birth,
+        updatedData.gender,
+        updatedData.contact_number,
+        updatedData.prev_church_attendee,
+        updatedData.address,
+        updatedData.age_group,
+        updatedData.prev_church,
+        updatedData.invited_by,
+        updatedData.date_attended,
+        updatedData.attending_cell_group,
+        updatedData.cell_leader_name,
+        updatedData.church_ministry,
+        updatedData.consolidation,
+        updatedData.willing_training,
+        updatedData.reason,
+        updatedData.water_baptized,
+        updatedData.member_status,
+        member_id,
+      ]
+    );
+
+    // 2️⃣ Update spiritual_trainings table
+    // First, delete old trainings
+    await conn.query(`DELETE FROM spiritual_trainings WHERE member_id = ?`, [member_id]);
+
+    // Then insert new trainings
+    if (updatedData.spiritual_trainings) {
+      const trainingRows = Object.entries(updatedData.spiritual_trainings)
+        .filter(([key, value]) => value && !key.endsWith("Year") && key !== "willing_training")
+        .map(([key]) => [member_id, key, updatedData.spiritual_trainings[`${key}Year`] || null]);
+
+      if (trainingRows.length) {
+        await conn.query(
+          `INSERT INTO spiritual_trainings (member_id, training_type, year) VALUES ?`,
+          [trainingRows]
+        );
+      }
+    }
+
+    // 3️⃣ Update household_members table
+    // Delete old households
+    await conn.query(`DELETE FROM household_members WHERE member_id = ?`, [member_id]);
+
+    // Insert new households
+    if (updatedData.household_members && updatedData.household_members.length) {
+      const householdRows = updatedData.household_members.map((hm) => [
+        member_id,
+        hm.name,
+        hm.relationship,
+        hm.date_of_birth,
+      ]);
+
+      await conn.query(
+        `INSERT INTO household_members (member_id, name, relationship, date_of_birth) VALUES ?`,
+        [householdRows]
+      );
+    }
+
+    await conn.commit();
+    return { success: true };
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
+
 
 export async function deleteMemberService(member_id) {
   await db.query("DELETE FROM spiritual_trainings WHERE member_id = ?", [member_id]);

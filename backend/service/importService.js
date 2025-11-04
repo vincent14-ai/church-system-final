@@ -26,53 +26,136 @@ export async function importMembersFromExcel(req, res) {
     function normalizeDate(value) {
       if (!value) return null;
 
-      // If Excel gives a Date object 
+      // If Excel gives a Date object
       if (value instanceof Date && !isNaN(value)) {
         return value.toISOString().split("T")[0];
       }
 
-      // If it's a string like "November 25, 1985" or "Nov 25, 1985"
-      const parsed = new Date(value);
+      // Normalize string (trim weird spaces)
+      const str = String(value).trim();
+
+      // Handle Excel-style date like "01-Apr-53" or "1-Apr-53"
+      const excelMatch = str.match(/^(\d{1,2})[-\s]?([A-Za-z]{3,})[-\s]?(\d{2,4})$/);
+      if (excelMatch) {
+        let [_, day, monthStr, year] = excelMatch;
+        const monthIndex = new Date(`${monthStr} 1, 2000`).getMonth(); // Apr -> 3
+
+        // Fix two-digit year: assume anything >= 30 is 1900s, else 2000s
+        if (year.length === 2) {
+          year = parseInt(year, 10);
+          year = year >= 30 ? 1900 + year : 2000 + year;
+        }
+
+        return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+
+      // Try normal JS date parsing
+      const parsed = new Date(str);
       if (!isNaN(parsed)) {
         return parsed.toISOString().split("T")[0];
       }
 
-      // Fallback: try manual parsing if Excel made it weird
-      const parts = value.split(/[\/\-\s,]+/); // handles "Nov 25 1985", "25-11-1985", etc.
+      // Fallback: manual parsing for variants like "25-11-1985", "Nov 25 1985"
+      const parts = str.split(/[\/\-\s,]+/);
       if (parts.length === 3) {
-        let [month, day, year] = parts;
-        // If month is word, convert it to number
-        if (isNaN(month)) {
-          const monthIndex = new Date(`${month} 1, 2000`).getMonth();
-          month = monthIndex + 1;
+        let [a, b, c] = parts;
+        // Detect order
+        if (isNaN(a)) {
+          // Month name first
+          const monthIndex = new Date(`${a} 1, 2000`).getMonth();
+          return `${c}-${String(monthIndex + 1).padStart(2, "0")}-${String(b).padStart(2, "0")}`;
+        } else if (isNaN(b)) {
+          // Day first, month word second
+          const monthIndex = new Date(`${b} 1, 2000`).getMonth();
+          return `${c}-${String(monthIndex + 1).padStart(2, "0")}-${String(a).padStart(2, "0")}`;
+        } else {
+          // All numbers → assume Y-M-D or D-M-Y depending on year length
+          if (a.length === 4) {
+            return `${a}-${b.padStart(2, "0")}-${c.padStart(2, "0")}`;
+          } else {
+            return `${c}-${b.padStart(2, "0")}-${a.padStart(2, "0")}`;
+          }
         }
-        return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       }
 
-      return null; // fallback if it's totally unrecognizable
+      return null;
     }
 
     function normalizeDateAttended(value) {
       if (!value) return null;
 
-      // Excel sometimes gives actual Date objects
+      // If it's already a Date object
       if (value instanceof Date && !isNaN(value)) {
-        return value.toISOString().split("T")[0];
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        return `${year}-${month}`;
       }
 
       const str = value.toString().trim();
 
       // --- CASE 1: Year only ---
       if (/^\d{4}$/.test(str)) {
-        // just a year
-        return `${str}-01`; // or `${str}-01-01` if you prefer full date
+        return `${str}-01`;
       }
 
-      // --- CASE 2: Month and Year ---
-      // Handles "November/2014", "Nov 2014", "11/2014"
-      const monthYearMatch = str.match(
-        /^(?:([A-Za-z]+)|(\d{1,2}))[\s\/\-]+(\d{4})$/
-      );
+      // --- CASE 2: Month-Year formats like "Jul-10" or "December 2014" ---
+      const monthYearMatch = str.match(/^(?:([A-Za-z]+)|(\d{1,2}))[\s\/\-]+(\d{2,4})$/);
+      if (monthYearMatch) {
+        const monthName = monthYearMatch[1];
+        const monthNum = monthYearMatch[2];
+        let year = monthYearMatch[3];
+
+        let month;
+        if (monthName) {
+          const monthIndex = new Date(`${monthName} 1, 2000`).getMonth();
+          month = monthIndex + 1;
+        } else {
+          month = parseInt(monthNum, 10);
+        }
+
+        if (year.length === 2) {
+          const yearNum = parseInt(year, 10);
+          year = yearNum < 50 ? `20${year}` : `19${year}`;
+        }
+
+        return `${year}-${String(month).padStart(2, "0")}`;
+      }
+
+      // --- CASE 3: DD/MM/YYYY or MM/DD/YYYY strings ---
+      const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (slashMatch) {
+        const [_, day, month, year] = slashMatch;
+        return `${year}-${String(month).padStart(2, "0")}`;
+      }
+
+      // --- CASE 4: fallback to JS Date parsing ---
+      const parsed = new Date(str);
+      if (!isNaN(parsed)) {
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        return `${year}-${month}`;
+      }
+
+      return null; // fallback
+    }
+
+    // Converts various date formats into "YYYY-MM-DD"
+    function formatDate(value) {
+      if (!value) return null;
+
+      // If Excel/WPS gives a Date object
+      if (value instanceof Date && !isNaN(value)) {
+        return value.toISOString().split("T")[0];
+      }
+
+      const str = value.toString().trim();
+
+      // Case 1: Full date recognized by JS
+      let parsed = new Date(str);
+      if (!isNaN(parsed)) return parsed.toISOString().split("T")[0];
+
+      // Case 2: Month-Year like "December 2014" or "Dec-2014" or "12/2014"
+      const monthYearMatch = str.match(/^(?:([A-Za-z]+)|(\d{1,2}))[\-\/\s]+(\d{4})$/);
       if (monthYearMatch) {
         const monthName = monthYearMatch[1];
         const monthNum = monthYearMatch[2];
@@ -80,25 +163,26 @@ export async function importMembersFromExcel(req, res) {
 
         let month;
         if (monthName) {
-          const monthIndex = new Date(`${monthName} 1, ${year}`).getMonth();
-          month = monthIndex + 1;
+          month = new Date(`${monthName} 1, ${year}`).getMonth() + 1;
         } else {
           month = parseInt(monthNum, 10);
         }
 
-        return `${year}-${String(month).padStart(2, "0")}`;
-        // or `${year}-${String(month).padStart(2, "0")}-01` if you want full date format
+        return `${year}-${String(month).padStart(2, "0")}-01`; // default to first day
       }
 
-      // --- CASE 3: Full date (November 25, 1985 or 11/25/1985) ---
-      const parsed = new Date(str);
-      if (!isNaN(parsed)) {
-        return parsed.toISOString().split("T")[0];
+      // Case 3: Short Excel-style like "01-Apr-53"
+      const excelMatch = str.match(/^(\d{1,2})-([A-Za-z]+)-(\d{2,4})$/);
+      if (excelMatch) {
+        let [_, day, monthStr, year] = excelMatch;
+        day = String(day).padStart(2, "0");
+        const month = new Date(`${monthStr} 1, 2000`).getMonth() + 1;
+        year = year.length === 2 ? "19" + year : year; // assume 1900s for two-digit years
+        return `${year}-${String(month).padStart(2, "0")}-${day}`;
       }
 
-      return null; // fallback if unrecognizable
+      return null; // fallback
     }
-
 
     // --- Normalize fields ---
     function normalizeRow(row) {
@@ -156,17 +240,32 @@ export async function importMembersFromExcel(req, res) {
 
     // --- Convert household columns into an array of objects ---
     function normalizeHouseholds(row) {
-      // Support either JSON or delimited string
-      const raw = row["Households (Format: Name - Relationship - DOB, comma separated)"];
+      // Raw value from backend
+      const raw = row["households"] || row["Households (Format: Name - Relationship - DOB, comma separated)"];
       if (!raw) return [];
+
+      // If already an array (e.g., parsed JSON)
+      if (Array.isArray(raw)) return raw.map(formatHousehold);
 
       if (typeof raw === "string") {
         try {
-          // Case 1: valid JSON string
+          // Case 1: JSON string
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) return parsed.map(formatHousehold);
         } catch {
-          // Case 2: comma-separated (like “Jane Doe - Wife - 1990-03-12, John - Son - 2015-06-21”)
+          // Case 2: semicolon-separated (current DB format)
+          if (raw.includes(";")) {
+            return raw.split(";").map((entry) => {
+              const match = entry.trim().match(/^(.*?)\s*-\s*(.*?)\s*\((.*?)\)$/);
+              if (match) {
+                const [_, name, relationship, dob] = match;
+                return formatHousehold({ name, relationship, date_of_birth: formatDate(dob) });
+              }
+              return null;
+            }).filter(Boolean);
+          }
+
+          // Case 3: comma-separated (legacy)
           return raw.split(",").map((entry) => {
             const [name, relationship, date_of_birth] = entry.split("-").map((s) => s?.trim());
             return formatHousehold({ name, relationship, date_of_birth: formatDate(date_of_birth) });
@@ -174,9 +273,9 @@ export async function importMembersFromExcel(req, res) {
         }
       }
 
-      if (Array.isArray(raw)) return raw.map(formatHousehold);
       return [];
     }
+
 
     function formatHousehold(h) {
       return {

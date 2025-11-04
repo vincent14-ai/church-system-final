@@ -71,10 +71,15 @@ export async function getAttendanceSummaryByDate(date) {
 }
 
 export async function getFilteredAttendance(filters) {
-  const { ageGroup, status, dateFrom, dateTo } = filters;
+  const { search, ageGroup, status, dateFrom, dateTo } = filters;
 
   const whereClauses = [];
   const params = [];
+
+  if (search) {
+    whereClauses.push("(m.first_name LIKE ? OR m.last_name LIKE ?)");
+    params.push(`%${search}%`, `%${search}%`);
+  }
 
   if (ageGroup && ageGroup !== "all") {
     whereClauses.push("m.age_group = ?");

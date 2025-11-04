@@ -4,9 +4,11 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Checkbox } from './ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Camera, Plus, Trash2, User } from 'lucide-react';
 import { Textarea } from './ui/textarea';
 import {
   Pagination,
@@ -38,7 +40,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "./ui/dialog";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "./ui/dropdown-menu";
 
+function parseChurchMinistry(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    return value.split(/\s*(?:,|-)\s*/).filter(Boolean);
+  }
+  return [];
+}
 
 export function Reports({ isDark, onToggleTheme }) {
   const [activeTab, setActiveTab] = useState('members');
@@ -48,6 +59,7 @@ export function Reports({ isDark, onToggleTheme }) {
   const [editingMember, setEditingMember] = useState(null);
 
   // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [startDate, setStartDate] = useState("");
@@ -60,6 +72,7 @@ export function Reports({ isDark, onToggleTheme }) {
 
   //attendance
   const [filters, setFilters] = useState({
+    search: "",
     ageGroup: "all",
     status: "all",
     dateFrom: "",
@@ -85,12 +98,17 @@ export function Reports({ isDark, onToggleTheme }) {
   const [editFormData, setEditFormData] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
 
+  const ministries = ["Media", "Praise Team", "Content Writer", "Ushering"];
+  const trainings = ["Life Class", "SOL 1", "SOL 2", "SOL 3"];
+
+
 
   // Fetch with filtered members
   const fetchMembers = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/members", {
         params: {
+          search: searchTerm || undefined,
           age_group: selectedAgeGroup || undefined,
           member_status: selectedStatus || undefined,
           date_from: startDate || undefined,
@@ -128,7 +146,7 @@ export function Reports({ isDark, onToggleTheme }) {
 
   // Clear attendance filters
   const clearFilters = () => {
-    setFilters({ ageGroup: "all", status: "all", dateFrom: "", dateTo: "" });
+    setFilters({ search: "", ageGroup: "all", status: "all", dateFrom: "", dateTo: "" });
     fetchFilteredAttendance();
   };
 
@@ -236,21 +254,91 @@ export function Reports({ isDark, onToggleTheme }) {
       alert("Import failed.");
     } finally {
       setIsUploading(false);
+      fetchMembers();
     }
   };
 
-  //edit member
+  // Convert backend households string → array of objects for editFormData
+  const parseHouseholds = (householdsString) => {
+    if (!householdsString) return [];
+
+    return householdsString.split(";").map((item) => {
+      const trimmed = item.trim();
+      if (!trimmed) return null;
+
+      const match = trimmed.match(/^(.*?)\s*-\s*(.*?)\s*\((\d{4}-\d{2}-\d{2})\)$/);
+      if (match) {
+        const [, name, relationship, date_of_birth] = match;
+        return { id: Date.now() + Math.random(), name, relationship, date_of_birth };
+      }
+
+      return null;
+    }).filter(Boolean);
+  };
+
+  // Convert backend string → object (for checkboxes)
+  const parseTrainings = (trainingsString) => {
+    if (!trainingsString) return {};
+    if (typeof trainingsString === "object") return trainingsString;
+
+    const result = {};
+    trainingsString.split(",").forEach((item) => {
+      const match = item.trim().match(/^(.*?)\s*\((\d{4})\)$/);
+      if (match) {
+        const [_, training, year] = match;
+        result[training] = true;
+        result[`${training}Year`] = year;
+      } else {
+        result[item.trim()] = true;
+      }
+    });
+
+    return result;
+  };
+
+  // Convert object → backend string
+  const formatTrainings = (trainingsObj) => {
+    if (!trainingsObj) return "";
+
+    return Object.entries(trainingsObj)
+      .filter(([key, value]) => value && !key.endsWith("Year") && key !== "willing_training")
+      .map(([key]) => {
+        const year = trainingsObj[`${key}Year`];
+        return year ? `${key} (${year})` : key;
+      })
+      .join(", ");
+  };
+
+  // edit member
   const handleEdit = async (member_id) => {
     try {
+      console.log("Fetching member:", member_id);
       const res = await axios.get(`http://localhost:5000/api/members/${member_id}`);
-      setEditFormData(res.data); // pre-fill form
+      const member = res.data;
+
+      // ✅ Map backend's 'trainings' to frontend's 'spiritual_trainings'
+      const parsedTrainings = parseTrainings(member.trainings);
+
+      setEditFormData({
+        ...member,
+        church_ministry: parseChurchMinistry(member.church_ministry),
+        spiritual_trainings: parsedTrainings, // 👈 this ensures it's defined
+        household_members: parseHouseholds(member.households),
+      });
+
+      console.log("🎯 editFormData after mapping:", {
+        ...member,
+        spiritual_trainings: parsedTrainings,
+      });
+
       setSelectedMember(member_id);
-      setShowEditModal(true); // open your modal or form
+      setShowEditModal(true);
     } catch (error) {
-      console.error("Failed to fetch member for edit:", error);
+      console.error("❌ Failed to fetch member for edit:", error);
       toast.error("Unable to load member details");
     }
   };
+
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
@@ -261,21 +349,24 @@ export function Reports({ isDark, onToggleTheme }) {
     try {
       if (!selectedMember) return toast.error("No member selected");
 
-      await axios.put(
-        `http://localhost:5000/api/members/${selectedMember}`,
-        editFormData
-      );
+      const payload = {
+        ...editFormData,
+        church_ministry: Array.isArray(editFormData.church_ministry)
+          ? editFormData.church_ministry.join(", ")
+          : editFormData.church_ministry || null,
+        trainings: formatTrainings(editFormData.spiritual_trainings),
+      };
+
+      await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
       fetchMembers();
 
-      toast.success("Member updated successfully!");
-
-      // Update local state
       setCurrentRows((prev) =>
         prev.map((m) =>
           m.member_id === selectedMember ? { ...m, ...editFormData } : m
         )
       );
 
+      toast.success("Member updated successfully!");
       setShowEditModal(false);
       setSelectedMember(null);
     } catch (error) {
@@ -283,7 +374,6 @@ export function Reports({ isDark, onToggleTheme }) {
       toast.error("Failed to update member. Please try again.");
     }
   };
-
 
   // delete member
   const handleDelete = async (member_id) => {
@@ -304,6 +394,15 @@ export function Reports({ isDark, onToggleTheme }) {
       console.error("Delete error:", error);
       toast.error("Failed to delete member. Please try again.");
     }
+  };
+
+  const toggleMinistry = (ministry) => {
+    setEditFormData(prev => {
+      const list = Array.isArray(prev.church_ministry) ? prev.church_ministry : [];
+      const exists = list.includes(ministry);
+      const next = exists ? list.filter(m => m !== ministry) : [...list, ministry];
+      return { ...prev, church_ministry: next };
+    });
   };
 
   return (
@@ -356,16 +455,16 @@ export function Reports({ isDark, onToggleTheme }) {
                         <Filter className="w-4 h-4 text-primary" />
                       </div>
                       <h3 className="text-lg">Filters & Search</h3>
-                      {/*<div className="flex items-center bg-slate-900 px-2 rounded">
-                      <Search size={16} />
-                      <input
-                        type="text"
-                        placeholder="Search by name..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-transparent p-1 text-sm outline-none"
-                      />
-                    </div>*/}
+                      <div className="flex items-center bg-slate-900 px-2 rounded">
+                        <Search size={16} />
+                        <input
+                          type="text"
+                          placeholder="Search by name..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="bg-transparent p-1 text-sm outline-none"
+                        />
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div className="space-y-2">
@@ -589,6 +688,18 @@ export function Reports({ isDark, onToggleTheme }) {
                         <Filter className="w-4 h-4 text-primary" />
                       </div>
                       <h3 className="text-lg">Filters & Search</h3>
+                      <div className="flex items-center bg-slate-900 px-2 rounded">
+                        <Search size={16} />
+                        <input
+                          type="text"
+                          placeholder="Search by name..."
+                          value={filters.search}
+                          onChange={(e) =>
+                            setFilters((prev) => ({ ...prev, search: e.target.value }))
+                          }
+                          className="bg-transparent p-1 text-sm outline-none"
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -871,220 +982,498 @@ export function Reports({ isDark, onToggleTheme }) {
             <DialogHeader>
               <DialogTitle>Edit Member</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
-              {/* First & Last Name */}
-              <Input
-                name="first_name"
-                value={editFormData.first_name || ""}
-                onChange={handleEditChange}
-                placeholder="First Name"
-              />
-              <Input
-                name="last_name"
-                value={editFormData.last_name || ""}
-                onChange={handleEditChange}
-                placeholder="Last Name"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>First Name</Label>
+                <Input
+                  name="first_name"
+                  value={editFormData.first_name || ""}
+                  onChange={handleEditChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name</Label>
+                <Input
+                  name="last_name"
+                  value={editFormData.last_name || ""}
+                  onChange={handleEditChange}
+                />
+              </div>
+            </div>
 
-              {/* Marital Status */}
-              <Select
-                value={editFormData.marital_status || ""}
-                onValueChange={(value) =>
-                  setEditFormData((prev) => ({ ...prev, marital_status: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select marital status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Single">Single</SelectItem>
-                  <SelectItem value="Married">Married</SelectItem>
-                  <SelectItem value="Divorced">Divorced</SelectItem>
-                  <SelectItem value="Widowed">Widowed</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Date of Birth</Label>
+                <Input
+                  type="date"
+                  name="date_of_birth"
+                  value={editFormData.date_of_birth?.slice(0, 10) || ""}
+                  onChange={(e) =>
+                    setEditFormData((prev) => ({ ...prev, date_of_birth: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Gender</Label>
+                <Select
+                  value={editFormData.gender || ""}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({ ...prev, gender: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="M">Male</SelectItem>
+                    <SelectItem value="F">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-              {/* Date of Birth */}
-              <Input
-                id="date_of_birth"
-                name="date_of_birth"
-                type="date"
-                value={editFormData.date_of_birth || ""}
-                onChange={handleEditChange}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Marital Status</Label>
+                <Select
+                  value={editFormData.marital_status || ""}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({ ...prev, marital_status: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Single">Single</SelectItem>
+                    <SelectItem value="Married">Married</SelectItem>
+                    <SelectItem value="Widowed">Widowed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Contact Number</Label>
+                <Input
+                  name="contact_number"
+                  value={editFormData.contact_number || ""}
+                  onChange={handleEditChange}
+                />
+              </div>
+            </div>
 
-              {/* Gender */}
-              <Select
-                name="gender"
-                value={editFormData.gender || ""}
-                onValueChange={(value) =>
-                  setEditFormData((prev) => ({ ...prev, gender: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="M">Male</SelectItem>
-                  <SelectItem value="F">Female</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Age Group (read only) */}
-              <Input
-                name="age_group"
-                value={editFormData.age_group || ""}
-                readOnly
-                className="bg-muted"
-              />
-
-              {/* Contact Number */}
-              <Input
-                id="contact_number"
-                name="contact_number"
-                value={editFormData.contact_number || ""}
-                onChange={handleEditChange}
-                required
-              />
-
-              {/* Address */}
+            <div className="space-y-2">
+              <Label>Address</Label>
               <Textarea
-                id="address"
                 name="address"
                 value={editFormData.address || ""}
                 onChange={handleEditChange}
-                required
               />
+            </div>
 
-              {/* Invited By */}
-              <Input
-                id="invited_by"
-                name="invited_by"
-                value={editFormData.invited_by || ""}
-                onChange={handleEditChange}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Age Group</Label>
+                <Select
+                  value={editFormData.age_group || ""}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({ ...prev, age_group: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Children">Children</SelectItem>
+                    <SelectItem value="Youth">Youth</SelectItem>
+                    <SelectItem value="Young Adult">Young Adult</SelectItem>
+                    <SelectItem value="Young Married">Young Married</SelectItem>
+                    <SelectItem value="Middle Adult">Middle Adult</SelectItem>
+                    <SelectItem value="Senior Adult">Senior Adult</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {/* Date Attended */}
-              <Input
-                id="date_attended"
-                name="date_attended"
-                type="month"
-                value={editFormData.date_attended || ""}
-                onChange={handleEditChange}
-              />
+              <div className="space-y-2">
+                <Label>Member Status</Label>
+                <Select
+                  value={editFormData.member_status || ""}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({ ...prev, member_status: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-              {/* Church Ministry */}
-              <Select
-                name="church_ministry"
-                value={editFormData.church_ministry || ""}
-                onValueChange={(value) =>
-                  setEditFormData((prev) => ({ ...prev, church_ministry: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select ministry" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Media">Media</SelectItem>
-                  <SelectItem value="Praise Team">Praise Team</SelectItem>
-                  <SelectItem value="Content Writer">Content Writer</SelectItem>
-                  <SelectItem value="Ushering">Ushering</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Previous Church Attendee?</Label>
+                <Select
+                  value={editFormData.prev_church_attendee ? "Yes" : "No"}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      prev_church_attendee: value === "Yes",
+                      prev_church: value === "Yes" ? prev.prev_church : "", // clear if "No"
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {/* Attending Cell Group */}
-              <Select
-                name="attending_cell_group"
-                value={String(editFormData.attending_cell_group ?? "")}
-                onValueChange={(value) =>
-                  setEditFormData((prev) => ({
-                    ...prev,
-                    attending_cell_group: Number(value),
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Yes</SelectItem>
-                  <SelectItem value="0">No</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {editFormData.attending_cell_group === 1 && (
+              {editFormData.prev_church_attendee && (
                 <div className="space-y-2">
-                  <Label htmlFor="cell_leader_name">Cell Leader's Name</Label>
+                  <Label>Previous Church Name</Label>
                   <Input
-                    id="cell_leader_name"
+                    name="prev_church"
+                    value={editFormData.prev_church || ""}
+                    onChange={handleEditChange}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Invited By</Label>
+                <Input
+                  name="invited_by"
+                  value={editFormData.invited_by || ""}
+                  onChange={handleEditChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Date Attended</Label>
+                <Input
+                  type="month"
+                  name="date_attended"
+                  value={editFormData.date_attended || ""}
+                  onChange={(e) =>
+                    setEditFormData((prev) => ({ ...prev, date_attended: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Attending Cell Group?</Label>
+                <Select
+                  value={editFormData.attending_cell_group ? "Yes" : "No"}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      attending_cell_group: value === "Yes",
+                      cell_leader_name: value === "Yes" ? prev.cell_leader_name : "", // clear if "No"
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {editFormData.attending_cell_group && (
+                <div className="space-y-2">
+                  <Label>Cell Leader</Label>
+                  <Input
                     name="cell_leader_name"
                     value={editFormData.cell_leader_name || ""}
                     onChange={handleEditChange}
                   />
                 </div>
               )}
+            </div>
 
-              {/* Consolidation */}
-              <Input
-                id="consolidation"
-                name="consolidation"
-                value={editFormData.consolidation || ""}
-                onChange={handleEditChange}
-                className="h-11 bg-input-background shadow-sm"
-                required
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Church Ministry</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {Array.isArray(editFormData.church_ministry) && editFormData.church_ministry.length
+                        ? editFormData.church_ministry.join(", ")
+                        : (typeof editFormData.church_ministry === "string" && editFormData.church_ministry.length
+                          ? editFormData.church_ministry
+                          : "Select ministry")}
+                    </Button>
+                  </DropdownMenuTrigger>
 
-              {/* Reason */}
-              <Input
-                id="reason"
+                  <DropdownMenuContent className="w-56">
+                    {ministries.map((ministry) => (
+                      <DropdownMenuCheckboxItem
+                        key={ministry}
+                        checked={Array.isArray(editFormData.church_ministry) && editFormData.church_ministry.includes(ministry)}
+                        onCheckedChange={() => toggleMinistry(ministry)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {ministry}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="space-y-2">
+                <Label>Consolidation</Label>
+                <Select
+                  name="consolidation"
+                  value={editFormData.consolidation || ""}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({ ...prev, consolidation: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <div className="space-y-4">
+                  <Label>Spiritual Training</Label>
+
+                  <div className="space-y-4">
+                    {trainings.map((key) => (
+                      <div key={key} className="flex items-center space-x-4">
+                        <Checkbox
+                          id={key}
+                          checked={!!editFormData.spiritual_trainings?.[key]}
+                          onCheckedChange={(checked) =>
+                            setEditFormData((prev) => ({
+                              ...prev,
+                              spiritual_trainings: {
+                                ...prev.spiritual_trainings,
+                                [key]: checked,
+                              },
+                            }))
+                          }
+                        />
+                        <Label htmlFor={key} className="flex-1">
+                          {key}
+                        </Label>
+
+                        {editFormData.spiritual_trainings?.[key] && (
+                          <Input
+                            type="number"
+                            placeholder="Year"
+                            className="w-24"
+                            value={editFormData.spiritual_trainings?.[`${key}Year`] || ""}
+                            onChange={(e) =>
+                              setEditFormData((prev) => ({
+                                ...prev,
+                                spiritual_trainings: {
+                                  ...prev.spiritual_trainings,
+                                  [`${key}Year`]: e.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Willing to train */}
+                    {!Object.entries(editFormData.spiritual_trainings || {})
+                      .filter(([key]) => key !== "willing_training")
+                      .some(([, value]) => value) && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="willing_training"
+                            checked={!!editFormData.spiritual_trainings?.willing_training}
+                            onCheckedChange={(checked) =>
+                              setEditFormData((prev) => ({
+                                ...prev,
+                                spiritual_trainings: {
+                                  ...prev.spiritual_trainings,
+                                  willing_training: checked,
+                                },
+                              }))
+                            }
+                          />
+                          <Label htmlFor="willing_training">
+                            Willing to undergo spiritual training (if none of the above was checked)
+                          </Label>
+                        </div>
+                      )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Willing to Train?</Label>
+                <Select
+                  value={editFormData.willing_training ? "Yes" : "No"}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      willing_training: value === "Yes",
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Water Baptized?</Label>
+                <Select
+                  value={editFormData.water_baptized ? "Yes" : "No"}
+                  onValueChange={(value) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      water_baptized: value === "Yes",
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Households</Label>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Household Members</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        household_members: [
+                          ...(prev.household_members || []),
+                          { id: Date.now(), name: "", relationship: "", date_of_birth: "" },
+                        ],
+                      }));
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Member
+                  </Button>
+                </div>
+
+                {(editFormData.household_members || []).map((member) => (
+                  <Card key={member.id} className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <Input
+                        placeholder="Name"
+                        value={member.name}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            household_members: prev.household_members.map((m) =>
+                              m.id === member.id ? { ...m, name: e.target.value } : m
+                            ),
+                          }))
+                        }
+                      />
+                      <Input
+                        placeholder="Relationship"
+                        value={member.relationship}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            household_members: prev.household_members.map((m) =>
+                              m.id === member.id
+                                ? { ...m, relationship: e.target.value }
+                                : m
+                            ),
+                          }))
+                        }
+                      />
+                      <Input
+                        type="date"
+                        value={member.date_of_birth}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            household_members: prev.household_members.map((m) =>
+                              m.id === member.id
+                                ? { ...m, date_of_birth: e.target.value }
+                                : m
+                            ),
+                          }))
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            household_members: prev.household_members.filter(
+                              (m) => m.id !== member.id
+                            ),
+                          }))
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+            </div>
+
+            <div className="space-y-2">
+              <Label>Reason</Label>
+              <Textarea
                 name="reason"
                 value={editFormData.reason || ""}
                 onChange={handleEditChange}
-                className="h-11 bg-input-background shadow-sm"
-                required
               />
-
-              {/* Water Baptized */}
-              <Select
-                value={String(editFormData.water_baptized ?? "")}
-                onValueChange={(value) =>
-                  setEditFormData((prev) => ({
-                    ...prev,
-                    water_baptized: Number(value),
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Yes</SelectItem>
-                  <SelectItem value="0">No</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Member Status */}
-              <Select
-                value={editFormData.member_status || ""}
-                onValueChange={(value) =>
-                  setEditFormData((prev) => ({ ...prev, member_status: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
+
             <DialogFooter>
               <Button onClick={handleEditSubmit}>Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }

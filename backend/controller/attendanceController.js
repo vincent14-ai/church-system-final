@@ -30,6 +30,7 @@ export async function fetchAttendance(req, res) {
 export async function readFilteredAttendance(req, res) {
   try {
     const filters = {
+      search: req.query.search || "",
       ageGroup: req.query.ageGroup || "all",
       status: req.query.status || "all",
       dateFrom: req.query.dateFrom || null,

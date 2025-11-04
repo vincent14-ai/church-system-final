@@ -422,7 +422,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="w-full justify-between">
                           {data.church_ministry?.length
-                            ? data.church_ministry.join(" - ")
+                            ? data.church_ministry.join(", ")
                             : "Select ministry"}
                         </Button>
                       </DropdownMenuTrigger>
