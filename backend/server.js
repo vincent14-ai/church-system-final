@@ -6,13 +6,20 @@ import authRoutes from "./route/authRoutes.js";
 import exportRoutes from "./route/exportRoutes.js";
 import importRoutes from "./route/importRoutes.js";
 import attendanceRoutes from "./route/attendanceRoutes.js";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:3000", // your React app origin
+    credentials: true, // allow cookies and auth headers
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/members", memberRoutes);

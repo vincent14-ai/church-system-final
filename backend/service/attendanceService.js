@@ -30,13 +30,12 @@ export async function setAttendance(member_id, date, status) {
 export async function getAttendanceByDate(date) {
   // Normalize to local date only (YYYY-MM-DD)
   const normalizedDate = normalizeToLocalDate(date);
-  console.log("Normalized date for record query:", normalizedDate);
 
   const [records] = await db.query(
     `
     SELECT 
       a.member_id AS id,
-      CONCAT(m.first_name, ' ', m.last_name) AS fullName,
+      CONCAT(m.last_name, ' ', m.first_name) AS fullName,
       m.age_group AS ageGroup,
       a.date,
       a.status
@@ -53,7 +52,6 @@ export async function getAttendanceByDate(date) {
 
 export async function getAttendanceSummaryByDate(date) {
   const normalizedDate = normalizeToLocalDate(date);
-  console.log("Normalized date for summary query:", normalizedDate);
 
   const [rows] = await db.query(
     `

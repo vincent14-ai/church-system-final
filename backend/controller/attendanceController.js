@@ -42,7 +42,7 @@ export async function readFilteredAttendance(req, res) {
     const data = await getFilteredAttendance(filters);
     res.json(data);
   } catch (err) {
-    console.error("❌ Error fetching filtered attendance:", err);
+    console.error("Error fetching filtered attendance:", err);
     res.status(500).json({ error: "Failed to fetch filtered attendance" });
   }
 }

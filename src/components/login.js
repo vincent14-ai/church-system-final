@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -29,8 +29,13 @@ export function Login({ onLogin, isDark, onToggleTheme }) {
       const data = await res.json();
 
       if (res.ok) {
-        // backend sends back role, ex. "personal"
-        onLogin(email, data.role);
+        // backend returns { email, role, token }
+        const returnedEmail = data.email || (data.user && data.user.email) || email;
+        const role = data.role || (data.user && data.user.role);
+        const token = data.token || (data.user && data.token);
+
+        // Pass token to parent so it can store and schedule auto-logout
+        onLogin(returnedEmail, role, token);
       } else {
         setError(data.message || "Invalid email or password");
       }
@@ -41,6 +46,7 @@ export function Login({ onLogin, isDark, onToggleTheme }) {
 
     setIsLoading(false);
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-4 relative">

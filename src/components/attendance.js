@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
 import { Calendar, Users, UserCheck, UserX, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -102,41 +100,83 @@ export function Attendance({ isDark, onToggleTheme }) {
     };
 
     try {
+      // Persist user's explicit selection first
       await axios.post("http://localhost:5000/api/attendance/create", {
         member_id: memberId,
         date: normalizedDate,
         status,
       });
 
+      // Update local records deterministically so we can calculate the threshold reliably
       setAttendanceRecords((prev) => {
+        // create a shallow copy and replace or append the new record
         const existingIndex = prev.findIndex(
           (r) => r.id === memberId && r.date === normalizedDate
         );
-
         if (existingIndex >= 0) {
           const updated = [...prev];
           updated[existingIndex] = newRecord;
+          // After updating, check threshold and possibly apply defaults
+          applyDefaultAbsentsIfNeeded(normalizedDate, updated);
           return updated;
         }
-        return [...prev, newRecord];
-      });
-
-      setSummary(prev => {
-        const alreadyMarked = attendanceRecords.some(
-          r => r.id === memberId && r.date === normalizedDate
-        );
-
-        if (alreadyMarked) return prev;
-
-        return {
-          presentCount: status === "present" ? prev.presentCount + 1 : prev.presentCount,
-          absentCount: status === "absent" ? prev.absentCount + 1 : prev.absentCount,
-          totalCount: prev.totalCount + 1,
-        };
+        const updated = [...prev, newRecord];
+        applyDefaultAbsentsIfNeeded(normalizedDate, updated);
+        return updated;
       });
 
     } catch (err) {
       console.error("Error saving attendance:", err);
+    }
+  };
+
+  // Apply default absent for all remaining members once threshold is reached (but keep them editable)
+  const applyDefaultAbsentsIfNeeded = async (date, currentRecords) => {
+    try {
+      const normalized = normalizeDate(date);
+      // Count how many unique members have been explicitly marked for this date
+      const markedIds = new Set(currentRecords.filter(r => r.date === normalized).map(r => r.id));
+      const markedCount = markedIds.size;
+
+      const THRESHOLD = 10;
+      if (markedCount < THRESHOLD) return; // nothing to do yet
+
+      // Find members that are not yet marked for this date
+      const toMark = filteredMembers.filter(m => !markedIds.has(m.id));
+      if (toMark.length === 0) return;
+
+      // Prepare default absent records
+      const defaultRecords = toMark.map(m => ({
+        id: m.id,
+        fullName: m.fullName,
+        ageGroup: m.ageGroup,
+        date: normalized,
+        status: 'absent',
+      }));
+
+      // Optimistically update local state to include defaults (avoid duplicates)
+      setAttendanceRecords(prev => {
+        const exists = new Set(prev.map(r => `${r.id}-${r.date}`));
+        const merged = [...prev];
+        for (const rec of defaultRecords) {
+          const key = `${rec.id}-${rec.date}`;
+          if (!exists.has(key)) merged.push(rec);
+        }
+        return merged;
+      });
+
+      // Persist default absent records to backend
+      await Promise.all(defaultRecords.map(rec => axios.post("http://localhost:5000/api/attendance/create", {
+        member_id: rec.id,
+        date: rec.date,
+        status: rec.status,
+      }).catch(err => {
+        // log but don't fail the whole batch
+        console.error('Error saving default absent for', rec.id, err);
+      })));
+
+    } catch (err) {
+      console.error('Error applying default absents:', err);
     }
   };
 
@@ -310,46 +350,6 @@ export function Attendance({ isDark, onToggleTheme }) {
                   })}
                 </div>
               </div>
-
-              {/* Attendance Summary Table */}
-              {attendanceRecords.length > 0 && (
-                <div className="space-y-4">
-                  <h3>Today's Attendance Summary</h3>
-                  <Card>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Age Group</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {attendanceRecords.map((record) => (
-                          <TableRow key={`${record.id}-${record.date}`}>
-                            <TableCell>{record.fullName}</TableCell>
-                            <TableCell>{record.ageGroup}</TableCell>
-                            <TableCell>
-                              <Badge variant={record.status === 'present' ? 'default' : 'destructive'}>
-                                {record.status === 'present' ? 'Present' : 'Absent'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(record.date).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </TableCell>
-
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Card>
-                </div>
-              )}
             </CardContent>
           </Card>
         </motion.div>

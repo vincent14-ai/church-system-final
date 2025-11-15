@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Login } from './components/login';
 import { PersonalInfo } from './components/personal-info';
 import { Attendance } from './components/attendance';
 import { Reports } from './components/reports';
+import { AttendanceTable } from './components/attendance-table';
 import { ThemeToggle } from './components/theme-toggle';
 import { Button } from './components/ui/button';
 import {
@@ -12,17 +13,21 @@ import {
   FileText,
   LogOut,
   Menu,
-  X
+  X,
+  CalendarCheck,
+  User2Icon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster } from "./components/ui/sonner";
-
+import SplashScreen from './components/splash-screen';
+import ViewPersonalRecords from './components/view-personal-records';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [isDark, setIsDark] = useState(false);
   const [activeView, setActiveView] = useState('personal');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Theme management
   useEffect(() => {
@@ -32,6 +37,9 @@ export default function App() {
       document.documentElement.classList.add('dark');
     }
   }, []);
+
+  // no-op mount effect (kept for structure)
+  useEffect(() => { }, []);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -44,18 +52,104 @@ export default function App() {
     }
   };
 
-  const handleLogin = (email, role) => {
-    const userData = { email, role };
-    setUser(userData);
-    setActiveView(role);
-    localStorage.setItem("user", JSON.stringify(userData));
-  };
-
   const handleLogout = () => {
+    clearLogoutTimeout();
     setUser(null);
     setActiveView("personal");
     setIsMobileMenuOpen(false);
     localStorage.removeItem("user");
+  };
+
+  // Keep a ref to any auto-logout timeout so we can clear it on logout/login
+  const logoutTimeoutRef = useRef(null);
+
+  const clearLogoutTimeout = () => {
+    if (logoutTimeoutRef.current) {
+      clearTimeout(logoutTimeoutRef.current);
+      logoutTimeoutRef.current = null;
+    }
+  };
+
+  const scheduleAutoLogout = (token) => {
+    if (!token) return;
+    try {
+      // Decode JWT payload without external libs
+      let base64Url = token.split('.')[1];
+      if (!base64Url) return;
+      base64Url = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64Url.length % 4) base64Url += '=';
+      const jsonPayload = decodeURIComponent(atob(base64Url).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      const payload = JSON.parse(jsonPayload);
+      const exp = payload.exp;
+      if (!exp) return;
+
+      const msUntilExpiry = exp * 1000 - Date.now();
+      if (msUntilExpiry <= 0) {
+        // already expired
+        handleLogout();
+        return;
+      }
+
+      // Set a timeout to refresh the token before it expires
+      clearLogoutTimeout();
+      // Refresh token 5 seconds before expiry
+      const refreshBefore = 5000; // 5 seconds before expiration
+      const msUntilRefresh = Math.max(0, msUntilExpiry - refreshBefore);
+
+      clearLogoutTimeout();
+      console.log('[auth] scheduling refresh in (ms):', msUntilRefresh);
+      logoutTimeoutRef.current = setTimeout(() => {
+        console.log('[auth] running scheduled refresh');
+        refreshAccessToken();
+      }, msUntilRefresh);
+
+
+    } catch (err) {
+      console.warn('Failed to schedule auto-logout:', err);
+    }
+  };
+
+  async function refreshAccessToken() {
+    try {
+      console.log('[auth] refreshAccessToken() called');
+      const res = await fetch("http://localhost:5000/api/auth/refresh", {
+        method: "POST",
+        credentials: "include",
+      });
+      console.log('[auth] refresh response status:', res.status);
+
+      if (!res.ok) throw new Error("Failed to refresh");
+
+      const data = await res.json();
+      const newToken = data.accessToken || data.token || data.access_token || data.jwt;
+      console.log('[auth] refresh returned token?', !!newToken);
+
+      // Save new token
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const updatedUser = { ...storedUser, token: newToken };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+
+      // 🔥 Clear old timeout and schedule new logout timer
+      clearLogoutTimeout();
+      scheduleAutoLogout(newToken);
+    } catch (err) {
+      console.error("Token refresh failed:", err && err.message ? err.message : err);
+      handleLogout(); // fallback logout
+    }
+  }
+
+
+  const handleLogin = (email, role, token) => {
+    const userData = { email, role, token };
+    setUser(userData);
+    setActiveView(role);
+    localStorage.setItem("user", JSON.stringify(userData));
+
+    // schedule auto logout based on token exp
+    scheduleAutoLogout(token);
   };
 
   // on page load
@@ -65,6 +159,11 @@ export default function App() {
       const userData = JSON.parse(storedUser);
       setUser(userData);
       setActiveView(userData.role);
+
+      // If there's a token, schedule auto logout (or logout immediately if expired)
+      if (userData.token) {
+        scheduleAutoLogout(userData.token);
+      }
     }
   }, []);
 
@@ -77,9 +176,21 @@ export default function App() {
       available: user?.role === 'personal'
     },
     {
+      id: 'view-personal-records',
+      label: 'View Records',
+      icon: User2Icon,
+      available: user?.role === 'personal'
+    },
+    {
       id: 'attendance',
       label: 'Attendance',
       icon: Calendar,
+      available: user?.role === 'attendance'
+    },
+    {
+      id: 'attendance-table',
+      label: 'Attendance Records',
+      icon: CalendarCheck,
       available: user?.role === 'attendance'
     },
     {
@@ -100,7 +211,9 @@ export default function App() {
     );
   }
 
-  return (
+  return loading ? (
+    <SplashScreen onFinish={() => setLoading(false)} />
+  ) : (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 transition-all duration-500">
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-card/95 backdrop-blur-md border-b border-border/50 shadow-sm z-50">
@@ -150,8 +263,8 @@ export default function App() {
                   <Button
                     variant={activeView === nav.id ? 'default' : 'ghost'}
                     className={`w-full justify-start h-11 shadow-sm transition-all duration-300 group ${activeView === nav.id
-                        ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground'
-                        : 'hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/50 hover:shadow-md hover:scale-[1.02]'
+                      ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground'
+                      : 'hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/50 hover:shadow-md hover:scale-[1.02]'
                       }`}
                     onClick={() => {
                       setActiveView(nav.id);
@@ -159,8 +272,8 @@ export default function App() {
                     }}
                   >
                     <nav.icon className={`w-4 h-4 mr-3 transition-all duration-300 ${activeView === nav.id
-                        ? 'text-primary-foreground'
-                        : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
+                      ? 'text-primary-foreground'
+                      : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
                       }`} />
                     <span className={`transition-all duration-300 ${activeView !== nav.id ? 'group-hover:translate-x-1' : ''
                       }`}>
@@ -233,20 +346,20 @@ export default function App() {
                   <Button
                     variant={activeView === nav.id ? 'default' : 'ghost'}
                     className={`w-full justify-start h-12 text-left transition-all duration-300 group relative overflow-hidden ${activeView === nav.id
-                        ? 'bg-gradient-to-r from-primary to-primary/90 shadow-lg text-primary-foreground'
-                        : 'hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/50 hover:shadow-md hover:scale-[1.02] text-foreground hover:text-accent-foreground'
+                      ? 'bg-gradient-to-r from-primary to-primary/90 shadow-lg text-primary-foreground'
+                      : 'hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/50 hover:shadow-md hover:scale-[1.02] text-foreground hover:text-accent-foreground'
                       }`}
                     onClick={() => setActiveView(nav.id)}
                   >
                     <div className={`absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/5 opacity-0 transition-opacity duration-300 ${activeView !== nav.id ? 'group-hover:opacity-100' : ''
                       }`} />
                     <nav.icon className={`w-5 h-5 mr-3 flex-shrink-0 transition-all duration-300 ${activeView === nav.id
-                        ? 'text-primary-foreground'
-                        : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
+                      ? 'text-primary-foreground'
+                      : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
                       }`} />
                     <span className={`flex-1 relative z-10 transition-all duration-300 ${activeView === nav.id
-                        ? 'text-primary-foreground'
-                        : 'group-hover:translate-x-1'
+                      ? 'text-primary-foreground'
+                      : 'group-hover:translate-x-1'
                       }`}>
                       {nav.label}
                     </span>
@@ -300,7 +413,9 @@ export default function App() {
               className="min-h-screen bg-gradient-to-br from-background/50 to-muted/20"
             >
               {activeView === 'personal' && <PersonalInfo isDark={isDark} onToggleTheme={toggleTheme} />}
+              {activeView === 'view-personal-records' && <ViewPersonalRecords isDark={isDark} onToggleTheme={toggleTheme} />}
               {activeView === 'attendance' && <Attendance isDark={isDark} onToggleTheme={toggleTheme} />}
+              {activeView === 'attendance-table' && <AttendanceTable isDark={isDark} onToggleTheme={toggleTheme} />}
               {activeView === 'logsandreports' && <Reports isDark={isDark} onToggleTheme={toggleTheme} />}
             </motion.div>
           </AnimatePresence>

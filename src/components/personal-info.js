@@ -8,14 +8,17 @@ import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { CameraCapture } from './camera';
-import { Camera, Plus, Trash2, User } from 'lucide-react';
+import { Camera, Plus, Trash2, User, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from './theme-toggle';
 import axios from 'axios';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "./ui/dropdown-menu";
+import { toast } from "sonner";
+import PhotoUpload from "./photo";
 
 export function PersonalInfo({ isDark, onToggleTheme }) {
   const [showCamera, setShowCamera] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
     first_name: "", last_name: "", marital_status: "", date_of_birth: "", gender: "", contact_number: "",
     prev_church_attendee: "", address: "", age_group: "", prev_church: "", invited_by: "", date_attended: "", attending_cell_group: "", cell_leader_name: "",
@@ -30,6 +33,12 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
   });
   const [message, setMessage] = useState("");
   const ministries = ["Media", "Praise Team", "Content Writer", "Ushering"];
+
+  const fetchData = async () => {
+    setLoading(true);
+    await new Promise(res => setTimeout(res, 1200)); // simulate API call
+    setLoading(false);
+  };
 
   const toggleMinistry = (ministry) => {
     setData((prev) => {
@@ -110,25 +119,28 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
     console.log('Personal Info Data:', data);
 
     try {
+      setLoading(true);
       const payload = {
         ...data,
         church_ministry: data.church_ministry?.join(", ") || "", // Convert to string
+        photo_url: data.photo_url || null, // <-- add photo URL
       };
-
       const res = await axios.post("http://localhost:5000/api/members", payload, {
         headers: { "Content-Type": "application/json" },
       });
+      setLoading(false);
 
-      setMessage(`Member added with id ${res.data.id}`);
+      toast.success(`${res.data.first_name} ${res.data.last_name} was added successfully!`);
       setData({
-        first_name: "", last_name: "", marital_status: "", date_of_birth: "", gender: "", contact_number: "",
+        photo_url: "", first_name: "", last_name: "", marital_status: "", date_of_birth: "", gender: "", contact_number: "",
         prev_church_attendee: "", address: "", age_group: "", prev_church: "", invited_by: "", attending_cell_group: "", cell_leader_name: "",
         church_ministry: "", consolidation: "", reason: "", water_baptized: "", spiritual_training: "", willing_training: "", member_status: "", created_at: "",
         household_members: [], spiritual_trainings: [], date_attended: "",
       }); // reset form
     } catch (err) {
       console.error(err);
-      setMessage("Failed to add member");
+      setLoading(false);
+      toast.error("Failed to add member");
     }
   };
 
@@ -178,24 +190,35 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                 <div className="bg-gradient-to-br from-muted/30 to-muted/10 rounded-xl p-6 space-y-4">
                   <Label className="text-lg">Profile Photo</Label>
                   <div className="flex items-center gap-6">
-                    <Avatar className="w-32 h-32 shadow-lg border-4 border-background">
-                      <AvatarImage src={data.photo} alt="Profile" />
+                    <Avatar className="w-32 h-32 shadow-lg border-4 border-background rounded-full">
+                      <AvatarImage
+                        src={data.photoPreview || data.photo}
+                        alt="Profile"
+                        className="object-cover w-full h-full"
+                      />
+
                       <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10">
                         <User className="w-16 h-16 text-primary" />
                       </AvatarFallback>
                     </Avatar>
+
                     <div className="space-y-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setShowCamera(true)}
-                        className="shadow-sm hover:shadow-md transition-all duration-200"
-                      >
-                        <Camera className="w-4 h-4 mr-2" />
-                        {data.photo ? 'Retake Photo' : 'Take Photo'}
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowCamera(true)}
+                          className="shadow-sm hover:shadow-md transition-all duration-200"
+                        >
+                          <Camera className="w-4 h-4 mr-2" />
+                          {data.photo ? 'Retake Photo' : 'Take Photo'}
+                        </Button>
+
+                        <PhotoUpload data={data} setData={setData} />
+                      </div>
+
                       <p className="text-sm text-muted-foreground">
-                        Click to capture a new photo using your camera
+                        Click to upload or capture a new photo
                       </p>
                     </div>
                   </div>
@@ -584,7 +607,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       onValueChange={(value) =>
                         setData((prev) => ({
                           ...prev,
-                          water_baptized: Number(value), // ✅ convert to number immediately
+                          water_baptized: Number(value), // convert to number immediately
                         }))
                       }
                     >
@@ -616,11 +639,9 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  Save Personal Information
+                <Button onClick={fetchData} disabled={loading} className="w-full h-12 text-base bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300">
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading ? "Saving..." : "Save Personal Information"}
                 </Button>
               </form>
             </CardContent>

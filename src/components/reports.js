@@ -8,7 +8,7 @@ import { Checkbox } from './ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Camera, Plus, Trash2, User } from 'lucide-react';
+import { Camera, Plus, Trash2, User, Loader2 } from 'lucide-react';
 import { Textarea } from './ui/textarea';
 import {
   Pagination,
@@ -42,6 +42,7 @@ import {
 } from "./ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "./ui/dropdown-menu";
 
+
 function parseChurchMinistry(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value;
@@ -56,7 +57,6 @@ export function Reports({ isDark, onToggleTheme }) {
   const [members, setMembers] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [currentRows, setCurrentRows] = useState([]);
-  const [editingMember, setEditingMember] = useState(null);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -131,7 +131,7 @@ export function Reports({ isDark, onToggleTheme }) {
       setRecords(res.data.records);
       setSummary(res.data.summary);
     } catch (err) {
-      console.error("❌ Error fetching filtered attendance:", err);
+      console.error("Error fetching filtered attendance:", err);
     }
   };
 
@@ -230,7 +230,6 @@ export function Reports({ isDark, onToggleTheme }) {
     }
   };
 
-  // Import members
   const handleImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -245,18 +244,42 @@ export function Reports({ isDark, onToggleTheme }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // optional delay (simulate loading)
-      await new Promise((delay) => setTimeout(delay, 1000));
+      const { message, importedCount, failedRows } = response.data;
 
-      alert(response.data.message);
+      // Single toast for both success and partial failure
+      if (!failedRows || failedRows.length === 0) {
+        toast.success(message || `Successfully imported ${importedCount} members.`);
+      } else {
+        toast(
+        <div className="space-y-2">
+          <div className="font-semibold text-green-600">
+            Imported {importedCount} new data.
+          </div>
+
+          <div className="space-y-1">
+            {failedRows.map((msg, idx) => (
+              <div key={idx} className="text-red-500 text-sm">
+                {msg}
+              </div>
+            ))}
+          </div>
+        </div>,
+        { duration: 15000 }
+      );
+      }
+
     } catch (err) {
       console.error("Upload failed:", err);
-      alert("Import failed.");
+      toast.error("Import failed", {
+        description: "Check your data format before importing.",
+        duration: 15000,
+      });
     } finally {
       setIsUploading(false);
       fetchMembers();
     }
   };
+
 
   // Convert backend households string → array of objects for editFormData
   const parseHouseholds = (householdsString) => {
@@ -316,7 +339,7 @@ export function Reports({ isDark, onToggleTheme }) {
       const res = await axios.get(`http://localhost:5000/api/members/${member_id}`);
       const member = res.data;
 
-      // ✅ Map backend's 'trainings' to frontend's 'spiritual_trainings'
+      // Map backend's 'trainings' to frontend's 'spiritual_trainings'
       const parsedTrainings = parseTrainings(member.trainings);
 
       setEditFormData({
@@ -334,7 +357,7 @@ export function Reports({ isDark, onToggleTheme }) {
       setSelectedMember(member_id);
       setShowEditModal(true);
     } catch (error) {
-      console.error("❌ Failed to fetch member for edit:", error);
+      console.error("Failed to fetch member for edit:", error);
       toast.error("Unable to load member details");
     }
   };
@@ -929,8 +952,17 @@ export function Reports({ isDark, onToggleTheme }) {
                           variant="outline"
                           disabled={isUploading}
                         >
-                          <Upload className="w-4 h-4 mr-2" />
-                          {isUploading ? "Uploading..." : "Import Members File"}
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              Import Members File
+                            </>
+                          )}
                         </Button>
 
                       </div>

@@ -276,7 +276,6 @@ export async function importMembersFromExcel(req, res) {
       return [];
     }
 
-
     function formatHousehold(h) {
       return {
         name: h.name || "",
@@ -285,19 +284,25 @@ export async function importMembersFromExcel(req, res) {
       };
     }
 
-    // --- Process all rows ---
-    for (const rawRow of sheet) {
+    const failedRows = [];
+
+    for (let i = 0; i < sheet.length; i++) {
       try {
+        const rawRow = sheet[i];
         const row = normalizeRow(rawRow);
         await addMember(row);
         importedCount++;
       } catch (err) {
-        console.error("Row import failed:", err.message);
+        const message = `Row ${i + 2} import failed: ${err.message}`;
+        console.error(message);
+        failedRows.push(message); // storing full message, not just row number
       }
     }
 
+    // Delete temp file
     fs.unlinkSync(filePath);
-    res.status(200).json({ message: `Successfully imported ${importedCount} members` });
+
+    res.status(200).json({ message: `Successfully imported ${importedCount} members`, importedCount, failedRows });
   } catch (error) {
     console.error("Import Error:", error);
     res.status(500).json({ message: "Failed to import Excel file", error: error.message });
