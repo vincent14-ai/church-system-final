@@ -1,13 +1,12 @@
-import mysql from "mysql2";
+// backend/config/db.js
+import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,       
-  user: process.env.DB_USER,       
-  password: process.env.DB_PASS,   
-  database: process.env.DB_NAME,   
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY 
+);
 
-export default pool.promise();
+export default supabase;

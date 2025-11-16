@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import axios from "axios";
+import { useRef, useState } from "react";
+import { supabase } from "../lib/supabaseClient.js";
 import { toast } from "sonner";
 
 export default function PhotoUpload({ data, setData }) {
@@ -7,52 +7,80 @@ export default function PhotoUpload({ data, setData }) {
   const [uploading, setUploading] = useState(false);
 
   const handlePhotoUpload = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const file = event.target.files?.[0];
+  if (!file) return;
 
-    // Preview image instantly
-    const previewUrl = URL.createObjectURL(file);
-    setData((prev) => ({ ...prev, photoPreview: previewUrl }));
+  // Check if user is authenticated
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    toast.error("You must be logged in to upload photos.");
+    return;
+  }
 
-    const formData = new FormData();
-    formData.append("file", file);
+  // Show preview instantly
+  const previewUrl = URL.createObjectURL(file);
+  setData(prev => ({ ...prev, photoPreview: previewUrl }));
 
-    try {
-      setUploading(true);
+  try {
+    setUploading(true);
 
-      const res = await axios.post(
-        "http://localhost:5000/api/upload",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+    const fileName = `${Date.now()}_${file.name}`;
 
-      setUploading(false);
+    // Upload directly to public bucket
+    const { data: uploadData, error } = await supabase
+      .storage
+      .from("profile-photos")
+      .upload(fileName, file);
 
-      // Save URL returned by backend
-      setData((prev) => ({
-        ...prev,
-        photo_url: res.data.fileUrl, // final cloud url
-        photo: res.data.fileUrl, // keep a consistent naming for usage
-      }));
-
-      toast.success("Photo uploaded successfully!");
-    } catch (err) {
-      console.error("Photo upload failed:", err);
-      setUploading(false);
-      toast.error("Photo upload failed.");
+    if (error) {
+      console.error("Upload error:", error);
+      throw error;
     }
-  };
+
+    // Get public URL (no signed URL needed)
+    const { data: urlData } = supabase
+      .storage
+      .from("profile-photos")
+      .getPublicUrl(fileName);
+
+    const publicUrl = urlData?.publicUrl;
+
+    if (!publicUrl) {
+      console.error("No public URL returned from getPublicUrl");
+      throw new Error("Failed to get public URL for uploaded file");
+    }
+
+    setData(prev => {
+      const newData = {
+        ...prev,
+        photo_url: publicUrl,
+        photo: publicUrl,
+      };
+      return newData;
+    });
+
+    toast.success("Photo uploaded successfully!");
+  } catch (err) {
+    console.error("Photo upload failed:", err);
+    toast.error("Photo upload failed.");
+  } finally {
+    setUploading(false);
+  }
+};
+
 
   const removePhoto = () => {
-    setData((prev) => ({
+    if (data.photoPreview) {
+      URL.revokeObjectURL(data.photoPreview);
+    }
+    setData(prev => ({
       ...prev,
       photo_url: "",
       photo: "",
       photoPreview: null,
     }));
   };
+
 
   return (
     <div className="flex flex-row gap-3">
@@ -63,24 +91,12 @@ export default function PhotoUpload({ data, setData }) {
         onChange={handlePhotoUpload}
         className="hidden"
       />
-
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="px-4 py-2 rounded-md border bg-secondary hover:bg-secondary/70 transition"
-        >
+        <button type="button" onClick={() => fileInputRef.current?.click()}>
           {uploading ? "Uploading…" : "Upload Photo"}
         </button>
-
-        {(data.photoPreview || data.photo) && (
-          <button
-            type="button"
-            onClick={removePhoto}
-            className="px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition"
-          >
-            Remove
-          </button>
+        {(data.photoPreview || data.photo || data.photo_url) && (
+          <button type="button" onClick={removePhoto}>Remove</button>
         )}
       </div>
     </div>

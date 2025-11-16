@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster } from "./components/ui/sonner";
 import SplashScreen from './components/splash-screen';
 import ViewPersonalRecords from './components/view-personal-records';
+import { supabase } from './lib/supabaseClient';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -52,121 +53,40 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        const user = session.user;
+        const role = user.user_metadata?.role || 'personal';
+        setUser({ email: user.email, role });
+        setActiveView(role);
+      } else {
+        setUser(null);
+        setActiveView('personal');
+      }
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        const user = session.user;
+        const role = user.user_metadata?.role || 'personal';
+        setUser({ email: user.email, role });
+        setActiveView(role);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleLogout = () => {
-    clearLogoutTimeout();
+    supabase.auth.signOut();
     setUser(null);
     setActiveView("personal");
     setIsMobileMenuOpen(false);
     localStorage.removeItem("user");
   };
-
-  // Keep a ref to any auto-logout timeout so we can clear it on logout/login
-  const logoutTimeoutRef = useRef(null);
-
-  const clearLogoutTimeout = () => {
-    if (logoutTimeoutRef.current) {
-      clearTimeout(logoutTimeoutRef.current);
-      logoutTimeoutRef.current = null;
-    }
-  };
-
-  const scheduleAutoLogout = (token) => {
-    if (!token) return;
-    try {
-      // Decode JWT payload without external libs
-      let base64Url = token.split('.')[1];
-      if (!base64Url) return;
-      base64Url = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      while (base64Url.length % 4) base64Url += '=';
-      const jsonPayload = decodeURIComponent(atob(base64Url).split('').map(function (c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      const payload = JSON.parse(jsonPayload);
-      const exp = payload.exp;
-      if (!exp) return;
-
-      const msUntilExpiry = exp * 1000 - Date.now();
-      if (msUntilExpiry <= 0) {
-        // already expired
-        handleLogout();
-        return;
-      }
-
-      // Set a timeout to refresh the token before it expires
-      clearLogoutTimeout();
-      // Refresh token 5 seconds before expiry
-      const refreshBefore = 5000; // 5 seconds before expiration
-      const msUntilRefresh = Math.max(0, msUntilExpiry - refreshBefore);
-
-      clearLogoutTimeout();
-      console.log('[auth] scheduling refresh in (ms):', msUntilRefresh);
-      logoutTimeoutRef.current = setTimeout(() => {
-        console.log('[auth] running scheduled refresh');
-        refreshAccessToken();
-      }, msUntilRefresh);
-
-
-    } catch (err) {
-      console.warn('Failed to schedule auto-logout:', err);
-    }
-  };
-
-  async function refreshAccessToken() {
-    try {
-      console.log('[auth] refreshAccessToken() called');
-      const res = await fetch("http://localhost:5000/api/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-      });
-      console.log('[auth] refresh response status:', res.status);
-
-      if (!res.ok) throw new Error("Failed to refresh");
-
-      const data = await res.json();
-      const newToken = data.accessToken || data.token || data.access_token || data.jwt;
-      console.log('[auth] refresh returned token?', !!newToken);
-
-      // Save new token
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      const updatedUser = { ...storedUser, token: newToken };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      setUser(updatedUser);
-
-      // 🔥 Clear old timeout and schedule new logout timer
-      clearLogoutTimeout();
-      scheduleAutoLogout(newToken);
-    } catch (err) {
-      console.error("Token refresh failed:", err && err.message ? err.message : err);
-      handleLogout(); // fallback logout
-    }
-  }
-
-
-  const handleLogin = (email, role, token) => {
-    const userData = { email, role, token };
-    setUser(userData);
-    setActiveView(role);
-    localStorage.setItem("user", JSON.stringify(userData));
-
-    // schedule auto logout based on token exp
-    scheduleAutoLogout(token);
-  };
-
-  // on page load
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      setActiveView(userData.role);
-
-      // If there's a token, schedule auto logout (or logout immediately if expired)
-      if (userData.token) {
-        scheduleAutoLogout(userData.token);
-      }
-    }
-  }, []);
-
 
   const navigation = [
     {
@@ -206,7 +126,7 @@ export default function App() {
   if (!user) {
     return (
       <div className="min-h-screen transition-colors duration-300">
-        <Login onLogin={handleLogin} isDark={isDark} onToggleTheme={toggleTheme} />
+        <Login isDark={isDark} onToggleTheme={toggleTheme} />
       </div>
     );
   }

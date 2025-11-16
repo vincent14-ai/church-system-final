@@ -3,9 +3,9 @@ import { addMember, getMembers, getMembersForAttendance, deleteMemberService, ge
 export async function createMember(req, res) {
   try {
     const {
-      first_name, last_name, marital_status, date_of_birth, gender, contact_number, prev_church_attendee, address, age_group,
-      prev_church, invited_by, date_attended, attending_cell_group, cell_leader_name, church_ministry, consolidation, reason, water_baptized, spiritual_trainings, 
-      willing_training, member_status, created_at, household_members, 
+      photo_url, first_name, last_name, marital_status, date_of_birth, gender, contact_number, prev_church_attendee, address, age_group,
+      prev_church, invited_by, date_attended, attending_cell_group, cell_leader_name, church_ministry, consolidation, reason, water_baptized, spiritual_trainings,
+      willing_training, member_status, created_at, household_members,
     } = req.body;
 
     if (!first_name) {
@@ -14,7 +14,7 @@ export async function createMember(req, res) {
 
     // 🔥 Pass the whole object instead of a million args
     const newMember = await addMember({
-      first_name, last_name, marital_status, date_of_birth, gender, contact_number, prev_church_attendee, address, age_group,
+      photo_url, first_name, last_name, marital_status, date_of_birth, gender, contact_number, prev_church_attendee, address, age_group,
       prev_church, invited_by, date_attended, attending_cell_group, cell_leader_name, church_ministry, consolidation, reason, water_baptized, spiritual_trainings, 
       willing_training, member_status, created_at, household_members, 
     });

@@ -24,6 +24,8 @@ import { Camera, Plus, Trash2, User, Loader2 } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "./ui/dropdown-menu";
 import { ThemeToggle } from './theme-toggle';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import PhotoUpload from './photo';
 
 
 function parseChurchMinistry(value) {
@@ -401,7 +403,19 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                                                 Delete
                                                             </Button>
                                                         </TableCell>
-                                                        <TableCell>photo</TableCell>
+                                                        <TableCell>
+                                                            {member.photo_url ? (
+                                                                <img
+                                                                    src={member.photo_url}
+                                                                    alt="Profile"
+                                                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-300"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                                                    <User className="w-6 h-6 text-gray-500" />
+                                                                </div>
+                                                            )}
+                                                        </TableCell>
                                                         <TableCell>{member.last_name}, {member.first_name}</TableCell>
                                                         <TableCell>{member.marital_status}</TableCell>
                                                         <TableCell>{new Date(member.date_of_birth).toLocaleDateString("en-US", {
@@ -488,6 +502,23 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                             <DialogHeader>
                                                 <DialogTitle>Edit Member</DialogTitle>
                                             </DialogHeader>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-4">
+                                                    <Avatar className="w-20 h-20">
+                                                        <AvatarImage src={editFormData.photo_url} alt="Profile" />
+                                                        <AvatarFallback>
+                                                            <User className="w-10 h-10" />
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex-1">
+                                                        <Label>Profile Photo</Label>
+                                                        <p className="text-sm text-muted-foreground mb-2">
+                                                            {editFormData.photo_url ? "Photo available" : "No photo uploaded"}
+                                                        </p>
+                                                        <PhotoUpload data={editFormData} setData={setEditFormData} />
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <div className="space-y-2">
                                                     <Label>First Name</Label>

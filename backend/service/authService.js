@@ -1,12 +1,19 @@
-import db from "../config/db.js";
+import supabase from "../config/db.js"; // your Supabase client
 import bcrypt from "bcryptjs";
 import { generateToken } from "../config/jwt.js";
 
 export async function loginUser(email, password) {
-  const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
-  if (rows.length === 0) return null;
+  // Fetch user by email
+  const { data: users, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", email)
+    .limit(1)
+    .single(); // get single record directly
 
-  const user = rows[0];
+  if (error || !users) return null;
+
+  const user = users;
 
   // Validate password
   const validPassword = await bcrypt.compare(password, user.password);

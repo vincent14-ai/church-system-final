@@ -6,8 +6,9 @@ import { Label } from './ui/label';
 import { Church, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from './theme-toggle';
+import { supabase } from '../lib/supabaseClient';
 
-export function Login({ onLogin, isDark, onToggleTheme }) {
+export function Login({ isDark, onToggleTheme }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,28 +21,21 @@ export function Login({ onLogin, isDark, onToggleTheme }) {
     setError('');
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await res.json();
+      if (error) throw error;
 
-      if (res.ok) {
-        // backend returns { email, role, token }
-        const returnedEmail = data.email || (data.user && data.user.email) || email;
-        const role = data.role || (data.user && data.user.role);
-        const token = data.token || (data.user && data.token);
+      // Get user metadata or role from user metadata
+      const user = data.user;
+      const role = user.user_metadata?.role || 'personal'; // Default to personal if not set
 
-        // Pass token to parent so it can store and schedule auto-logout
-        onLogin(returnedEmail, role, token);
-      } else {
-        setError(data.message || "Invalid email or password");
-      }
+
     } catch (err) {
       console.error("Login error:", err);
-      setError("Something went wrong. Try again later.");
+      setError(err.message || "Invalid email or password");
     }
 
     setIsLoading(false);

@@ -20,9 +20,9 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
   const [showCamera, setShowCamera] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
-    first_name: "", last_name: "", marital_status: "", date_of_birth: "", gender: "", contact_number: "",
-    prev_church_attendee: "", address: "", age_group: "", prev_church: "", invited_by: "", date_attended: "", attending_cell_group: "", cell_leader_name: "",
-    church_ministry: "", consolidation: "", reason: "", water_baptized: "", spiritual_training: "", willing_training: "", member_status: "", created_at: "",
+    photo_url: "", first_name: "", last_name: "", marital_status: "", date_of_birth: "", gender: "", contact_number: "",
+    prev_church_attendee: false, address: "", age_group: "", prev_church: "", invited_by: "", date_attended: "", attending_cell_group: false, cell_leader_name: "",
+    church_ministry: null, consolidation: "", reason: "", water_baptized: false, spiritual_training: "", willing_training: false, member_status: "", created_at: "",
     household_members: [], spiritual_trainings: {
       "Life Class": false,
       "SOL 1": false,
@@ -31,14 +31,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
       willing_training: false,
     },
   });
-  const [message, setMessage] = useState("");
   const ministries = ["Media", "Praise Team", "Content Writer", "Ushering"];
-
-  const fetchData = async () => {
-    setLoading(true);
-    await new Promise(res => setTimeout(res, 1200)); // simulate API call
-    setLoading(false);
-  };
 
   const toggleMinistry = (ministry) => {
     setData((prev) => {
@@ -116,15 +109,23 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
   // form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Personal Info Data:', data);
+    console.log('Personal Info Data before payload:', data);
+    console.log('data.photo_url value:', data.photo_url);
+    console.log('data.photo value:', data.photo);
 
     try {
       setLoading(true);
       const payload = {
         ...data,
-        church_ministry: data.church_ministry?.join(", ") || "", // Convert to string
-        photo_url: data.photo_url || null, // <-- add photo URL
+        photo_url: data.photo_url || null,  // Store photo_path in photo_url column
+        church_ministry: data.church_ministry?.join(", ") || "",
+        household_members: data.household_members.map(member => ({
+          ...member,
+          date_of_birth: member.date_of_birth || null,
+        })),
       };
+      console.log('Final payload being sent:', payload);
+      console.log('payload.photo_url value:', payload.photo_url);
       const res = await axios.post("http://localhost:5000/api/members", payload, {
         headers: { "Content-Type": "application/json" },
       });
@@ -133,8 +134,8 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
       toast.success(`${res.data.first_name} ${res.data.last_name} was added successfully!`);
       setData({
         photo_url: "", first_name: "", last_name: "", marital_status: "", date_of_birth: "", gender: "", contact_number: "",
-        prev_church_attendee: "", address: "", age_group: "", prev_church: "", invited_by: "", attending_cell_group: "", cell_leader_name: "",
-        church_ministry: "", consolidation: "", reason: "", water_baptized: "", spiritual_training: "", willing_training: "", member_status: "", created_at: "",
+        prev_church_attendee: false, address: "", age_group: "", prev_church: "", invited_by: "", attending_cell_group: false, cell_leader_name: "",
+        church_ministry: "", consolidation: "", reason: "", water_baptized: false, spiritual_training: "", willing_training: false, member_status: "", created_at: "",
         household_members: [], spiritual_trainings: [], date_attended: "",
       }); // reset form
     } catch (err) {
@@ -266,6 +267,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       onValueChange={(value) =>
                         setData((prev) => ({ ...prev, marital_status: value }))
                       }
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select marital status" />
@@ -286,6 +288,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       type="date"
                       value={data.date_of_birth}
                       onChange={handleChange}
+                      required
                     />
                   </div>
                 </div>
@@ -299,6 +302,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       onValueChange={(value) =>
                         setData((prev) => ({ ...prev, gender: value }))
                       }
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select gender" />
@@ -388,7 +392,10 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                     name="prev_church_attendee"
                     value={String(data.prev_church_attendee)}
                     onValueChange={(value) =>
-                      setData((prev) => ({ ...prev, prev_church_attendee: Number(value) }))
+                      setData(prev => ({
+                        ...prev,
+                        prev_church_attendee: value === "true"
+                      }))
                     }
                     className="w-full p-2 rounded-md bg-slate-900 border border-slate-700"
                   >
@@ -396,11 +403,12 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1" >Yes</SelectItem>
-                      <SelectItem value="0">No</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                      <SelectItem value="false">No</SelectItem>
                     </SelectContent>
                   </Select>
-                  {data.prev_church_attendee === 1 && (
+
+                  {data.prev_church_attendee === true && (
                     <div className="space-y-2">
                       <Label htmlFor="prev_church">Previous Born-Again Christian Church</Label>
                       <Input
@@ -466,21 +474,25 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                   <Label>Cellgroup Member?</Label>
                   <Select
                     name="attending_cell_group"
-                    value={String(data.attending_cell_group)} // must be a string for Select
+                    value={String(data.attending_cell_group)}
                     onValueChange={(value) =>
-                      setData((prev) => ({ ...prev, attending_cell_group: Number(value) }))
+                      setData(prev => ({
+                        ...prev,
+                        attending_cell_group: value === "true"   // boolean
+                      }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Yes</SelectItem>
-                      <SelectItem value="0">No</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                      <SelectItem value="false">No</SelectItem>
                     </SelectContent>
                   </Select>
 
-                  {data.attending_cell_group === 1 && (
+
+                  {data.attending_cell_group === true && (
                     <div className="space-y-2">
                       <Label htmlFor="cell_leader_name">Cell Leader's Name</Label>
                       <Input
@@ -605,9 +617,9 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                     <Select
                       value={String(data.water_baptized)}
                       onValueChange={(value) =>
-                        setData((prev) => ({
+                        setData(prev => ({
                           ...prev,
-                          water_baptized: Number(value), // convert to number immediately
+                          water_baptized: value === "true"   // boolean
                         }))
                       }
                     >
@@ -615,10 +627,11 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                         <SelectValue placeholder="Select..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">Yes</SelectItem>
-                        <SelectItem value="0">No</SelectItem>
+                        <SelectItem value="true">Yes</SelectItem>
+                        <SelectItem value="false">No</SelectItem>
                       </SelectContent>
                     </Select>
+
                   </div>
 
 
@@ -639,7 +652,7 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                   </div>
                 </div>
 
-                <Button onClick={fetchData} disabled={loading} className="w-full h-12 text-base bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300">
+                <Button disabled={loading} className="w-full h-12 text-base bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300">
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {loading ? "Saving..." : "Save Personal Information"}
                 </Button>
