@@ -143,11 +143,18 @@ export async function getMembers(filters = {}) {
 // 🔹 Get member for attendance
 export async function getMembersForAttendance() {
   const { data, error } = await supabase.from("member_data").select(`
-    member_id AS id, first_name || ' ' || last_name AS fullName, age_group, member_status
+    member_id, first_name, last_name, age_group, member_status
   `);
 
   if (error) throw error;
-  return data;
+
+  // Perform concatenation in JavaScript
+  return data.map(member => ({
+    id: member.member_id,
+    fullName: `${member.first_name} ${member.last_name}`,
+    age_group: member.age_group,
+    member_status: member.member_status
+  }));
 }
 
 // 🔹 Get single member by ID

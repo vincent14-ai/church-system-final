@@ -1,23 +1,27 @@
-import db from "../config/db.js";
+import supabase from "../config/db.js";
 import { normalizeToLocalDate } from "../utils/date.js";
 
 export async function setAttendance(member_id, date, status) {
   try {
-    const [existing] = await db.query(
-      "SELECT * FROM attendance WHERE member_id = ? AND date = ?",
-      [member_id, date]
-    );
+    // Convert to YYYY-MM-DD
+    const normalizedDate = date.split("T")[0];
 
-    if (existing.length > 0) {
-      await db.query(
-        "UPDATE attendance SET status = ? WHERE member_id = ? AND date = ?",
-        [status, member_id, date]
+    const { error } = await supabase
+      .from("attendance")
+      .upsert(
+        {
+          member_id,
+          date: normalizedDate,
+          status,
+        },
+        {
+          onConflict: "member_id,date", // must match your uniqueness constraint
+        }
       );
-    } else {
-      await db.query(
-        "INSERT INTO attendance (member_id, date, status) VALUES (?, ?, ?)",
-        [member_id, date, status]
-      );
+
+    if (error) {
+      console.error("Supabase attendance upsert error:", error);
+      throw error;
     }
 
     return { success: true, message: "Attendance saved." };
@@ -28,99 +32,106 @@ export async function setAttendance(member_id, date, status) {
 }
 
 export async function getAttendanceByDate(date) {
-  // Normalize to local date only (YYYY-MM-DD)
-  const normalizedDate = normalizeToLocalDate(date);
+  const normalizedDate = date.split("T")[0];
 
-  const [records] = await db.query(
-    `
-    SELECT 
-      a.member_id AS id,
-      CONCAT(m.last_name, ' ', m.first_name) AS fullName,
-      m.age_group AS ageGroup,
-      a.date,
-      a.status
-    FROM attendance a
-    JOIN member_data m ON a.member_id = m.member_id
-    WHERE DATE(a.date) = ?
-    ORDER BY m.last_name, m.first_name
-    `,
-    [normalizedDate]
-  );
+  const { data, error } = await supabase
+    .from("attendance")
+    .select(`
+      member_id,
+      date,
+      status,
+      member_data (
+        first_name,
+        last_name,
+        age_group
+      )
+    `)
+    .eq("date", normalizedDate)
+    .order("member_data(last_name)")
+    .order("member_data(first_name)");
 
-  return records;
+  if (error) throw error;
+
+  // Flatten for frontend compatibility
+  return data.map(a => ({
+    id: a.member_id,
+    fullName: `${a.member_data.last_name} ${a.member_data.first_name}`,
+    ageGroup: a.member_data.age_group,
+    date: a.date,
+    status: a.status,
+  }));
 }
+
 
 export async function getAttendanceSummaryByDate(date) {
-  const normalizedDate = normalizeToLocalDate(date);
+  const normalizedDate = date.split("T")[0];
 
-  const [rows] = await db.query(
-    `
-    SELECT 
-      SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) AS presentCount,
-      SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) AS absentCount,
-      COUNT(*) AS totalCount
-    FROM attendance a
-    WHERE DATE(a.date) = ?
-    `,
-    [normalizedDate]
-  );
+  const { data, error } = await supabase
+    .from("attendance")
+    .select("status")
+    .eq("date", normalizedDate);
 
-  return rows[0];
+  if (error) throw error;
+
+  const presentCount = data.filter(a => a.status === "present").length;
+  const absentCount = data.filter(a => a.status === "absent").length;
+  const totalCount = data.length;
+
+  return { presentCount, absentCount, totalCount };
 }
+
 
 export async function getFilteredAttendance(filters) {
   const { search, ageGroup, status, dateFrom, dateTo } = filters;
 
-  const whereClauses = [];
-  const params = [];
+  let query = supabase
+    .from("attendance")
+    .select(`
+      member_id,
+      date,
+      status,
+      member_data (
+        first_name,
+        last_name,
+        age_group,
+        member_status
+      )
+    `);
 
   if (search) {
-    whereClauses.push("(m.first_name LIKE ? OR m.last_name LIKE ?)");
-    params.push(`%${search}%`, `%${search}%`);
+    query = query.or(`member_data.first_name.ilike.%${search}%,member_data.last_name.ilike.%${search}%`);
   }
 
   if (ageGroup && ageGroup !== "all") {
-    whereClauses.push("m.age_group = ?");
-    params.push(ageGroup);
+    query = query.eq("member_data.age_group", ageGroup);
   }
 
   if (status && status !== "all") {
-    whereClauses.push("a.status = ?");
-    params.push(status);
+    query = query.eq("status", status);
   }
 
   if (dateFrom && dateTo) {
-    whereClauses.push("DATE(a.date) BETWEEN ? AND ?");
-    params.push(dateFrom, dateTo);
+    query = query.gte("date", dateFrom).lte("date", dateTo);
   } else if (dateFrom) {
-    whereClauses.push("DATE(a.date) >= ?");
-    params.push(dateFrom);
+    query = query.gte("date", dateFrom);
   } else if (dateTo) {
-    whereClauses.push("DATE(a.date) <= ?");
-    params.push(dateTo);
+    query = query.lte("date", dateTo);
   }
 
-  const whereSQL = whereClauses.length > 0 ? "WHERE " + whereClauses.join(" AND ") : "";
+  query = query.order("date", { ascending: false });
 
-  // Query attendance joined with member data
-  const [records] = await db.query(
-    `
-    SELECT 
-      a.member_id AS id,
-      CONCAT(m.first_name, ' ', m.last_name) AS fullName,
-      m.age_group AS ageGroup,
-      m.member_status AS memberStatus,
-      a.date,
-      a.status
-    FROM attendance a
-    JOIN member_data m ON a.member_id = m.member_id
-    ${whereSQL}
-    ORDER BY a.date DESC
-    `,
-    params
-  );
+  const { data, error } = await query;
+  if (error) throw error;
 
-  // Compute summary counts
+  const records = data.map(a => ({
+    id: a.member_id,
+    fullName: `${a.member_data.first_name} ${a.member_data.last_name}`,
+    ageGroup: a.member_data.age_group,
+    memberStatus: a.member_data.member_status,
+    date: a.date,
+    status: a.status,
+  }));
+
   const presentCount = records.filter(r => r.status === "present").length;
   const absentCount = records.filter(r => r.status === "absent").length;
   const totalCount = records.length;
@@ -128,7 +139,8 @@ export async function getFilteredAttendance(filters) {
 
   return {
     records,
-    summary: { presentCount, absentCount, totalCount, rate }
+    summary: { presentCount, absentCount, totalCount, rate },
   };
 }
+
 

@@ -39,6 +39,13 @@ export default function App() {
     }
   }, []);
 
+  // Fallback to stop loading after 5 seconds in case splash screen hangs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
   // no-op mount effect (kept for structure)
   useEffect(() => { }, []);
 
@@ -62,8 +69,11 @@ export default function App() {
         setUser({ email: user.email, role });
         setActiveView(role);
       } else {
-        setUser(null);
-        setActiveView('personal');
+        // Trigger logout when session is null (e.g., token not refreshed or expired)
+        // Only call handleLogout if user is currently logged in to prevent loops
+        if (user) {
+          handleLogout();
+        }
       }
     });
 
@@ -78,7 +88,7 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [user]);
 
   const handleLogout = () => {
     supabase.auth.signOut();

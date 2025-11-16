@@ -28,8 +28,9 @@ export async function importMembersFromExcel(req, res) {
 
       // If Excel gives a Date object
       if (value instanceof Date && !isNaN(value)) {
-        return value.toISOString().split("T")[0];
-      }
+        const adjusted = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
+        return adjusted.toISOString().split("T")[0];
+       }
 
       // Normalize string (trim weird spaces)
       const str = String(value).trim();
