@@ -69,11 +69,8 @@ export default function App() {
         setUser({ email: user.email, role });
         setActiveView(role);
       } else {
-        // Trigger logout when session is null (e.g., token not refreshed or expired)
-        // Only call handleLogout if user is currently logged in to prevent loops
-        if (user) {
-          handleLogout();
-        }
+        setUser(null);
+        setActiveView('personal');
       }
     });
 
