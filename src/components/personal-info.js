@@ -15,6 +15,7 @@ import axios from 'axios';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "./ui/dropdown-menu";
 import { toast } from "sonner";
 import PhotoUpload from "./photo";
+import { supabase } from "../lib/supabaseClient.js";
 
 export function PersonalInfo({ isDark, onToggleTheme }) {
   const [showCamera, setShowCamera] = useState(false);
@@ -109,31 +110,52 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
   // form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Personal Info Data before payload:', data);
-    console.log('data.photo_url value:', data.photo_url);
-    console.log('data.photo value:', data.photo);
+    setLoading(true);
 
     try {
-      setLoading(true);
+      let photoURL = data.photo_url;
+      let photoPath = data.photoPath;
+
+      // Upload photo FIRST if a new file was selected
+      if (data.selectedFile) {
+        const fileName = `${Date.now()}_${data.selectedFile.name}`;
+
+        const { error: uploadError } = await supabase
+          .storage
+          .from("profile-photos")
+          .upload(fileName, data.selectedFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase
+          .storage
+          .from("profile-photos")
+          .getPublicUrl(fileName);
+
+        photoURL = urlData.publicUrl;
+        photoPath = fileName;
+      }
+
+      // FINAL PAYLOAD
       const payload = {
         ...data,
-        photo_url: data.photo_url || null,  // Store photo_path in photo_url column
+        photo_url: photoURL,
+        photoPath: photoPath,
+        photo: photoURL,
         church_ministry: data.church_ministry?.join(", ") || "",
-        household_members: data.household_members.map(member => ({
-          ...member,
-          date_of_birth: member.date_of_birth || null,
+        household_members: data.household_members.map(m => ({
+          ...m,
+          date_of_birth: m.date_of_birth || null,
         })),
       };
-      console.log('Final payload being sent:', payload);
-      console.log('payload.photo_url value:', payload.photo_url);
-      const res = await axios.post("http://localhost:5000/api/members", payload, {
-        headers: { "Content-Type": "application/json" },
-      });
-      setLoading(false);
+
+      const res = await axios.post("http://localhost:5000/api/members", payload);
 
       toast.success(`${res.data.first_name} ${res.data.last_name} was added successfully!`);
+
+      // RESET STATE (fixed)
       setData({
-        photo_url: "", first_name: "", last_name: "", marital_status: "", date_of_birth: "", gender: "", contact_number: "",
+        photo_url: "", photoPath: "", photo: "", selectedFile: null, photoPreview: null, first_name: "", last_name: "", marital_status: "", date_of_birth: "", gender: "", contact_number: "",
         prev_church_attendee: false, address: "", age_group: "", prev_church: "", invited_by: "", attending_cell_group: false, cell_leader_name: "",
         church_ministry: "", consolidation: "", reason: "", water_baptized: false, spiritual_training: "", willing_training: false, member_status: "", created_at: "",
         household_members: [], spiritual_trainings: [], date_attended: "",
@@ -605,7 +627,6 @@ export function PersonalInfo({ isDark, onToggleTheme }) {
                       value={data.reason}
                       onChange={handleChange}
                       className="h-11 bg-input-background shadow-sm"
-                      required
                     />
                   </div>
                 </div>

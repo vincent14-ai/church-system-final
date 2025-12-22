@@ -1,6 +1,7 @@
 import XLSX from "xlsx";
 import fs from "fs";
 import { addMember } from "./memberService.js";
+import { normalizeToLocalDate } from "../utils/date.js";
 
 export async function importMembersFromExcel(req, res) {
   try {
@@ -26,12 +27,6 @@ export async function importMembersFromExcel(req, res) {
     function normalizeDate(value) {
       if (!value) return null;
 
-      // If Excel gives a Date object
-      if (value instanceof Date && !isNaN(value)) {
-        const adjusted = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
-        return adjusted.toISOString().split("T")[0];
-       }
-
       // Normalize string (trim weird spaces)
       const str = String(value).trim();
 
@@ -53,7 +48,7 @@ export async function importMembersFromExcel(req, res) {
       // Try normal JS date parsing
       const parsed = new Date(str);
       if (!isNaN(parsed)) {
-        return parsed.toISOString().split("T")[0];
+        return normalizeToLocalDate(parsed);
       }
 
       // Fallback: manual parsing for variants like "25-11-1985", "Nov 25 1985"
@@ -132,54 +127,7 @@ export async function importMembersFromExcel(req, res) {
       // --- CASE 4: fallback to JS Date parsing ---
       const parsed = new Date(str);
       if (!isNaN(parsed)) {
-        const year = parsed.getFullYear();
-        const month = String(parsed.getMonth() + 1).padStart(2, "0");
-        return `${year}-${month}`;
-      }
-
-      return null; // fallback
-    }
-
-    // Converts various date formats into "YYYY-MM-DD"
-    function formatDate(value) {
-      if (!value) return null;
-
-      // If Excel/WPS gives a Date object
-      if (value instanceof Date && !isNaN(value)) {
-        return value.toISOString().split("T")[0];
-      }
-
-      const str = value.toString().trim();
-
-      // Case 1: Full date recognized by JS
-      let parsed = new Date(str);
-      if (!isNaN(parsed)) return parsed.toISOString().split("T")[0];
-
-      // Case 2: Month-Year like "December 2014" or "Dec-2014" or "12/2014"
-      const monthYearMatch = str.match(/^(?:([A-Za-z]+)|(\d{1,2}))[\-\/\s]+(\d{4})$/);
-      if (monthYearMatch) {
-        const monthName = monthYearMatch[1];
-        const monthNum = monthYearMatch[2];
-        const year = monthYearMatch[3];
-
-        let month;
-        if (monthName) {
-          month = new Date(`${monthName} 1, ${year}`).getMonth() + 1;
-        } else {
-          month = parseInt(monthNum, 10);
-        }
-
-        return `${year}-${String(month).padStart(2, "0")}-01`; // default to first day
-      }
-
-      // Case 3: Short Excel-style like "01-Apr-53"
-      const excelMatch = str.match(/^(\d{1,2})-([A-Za-z]+)-(\d{2,4})$/);
-      if (excelMatch) {
-        let [_, day, monthStr, year] = excelMatch;
-        day = String(day).padStart(2, "0");
-        const month = new Date(`${monthStr} 1, 2000`).getMonth() + 1;
-        year = year.length === 2 ? "19" + year : year; // assume 1900s for two-digit years
-        return `${year}-${String(month).padStart(2, "0")}-${day}`;
+        return normalizeToLocalDate(parsed).substring(0, 7);
       }
 
       return null; // fallback
@@ -260,7 +208,7 @@ export async function importMembersFromExcel(req, res) {
               const match = entry.trim().match(/^(.*?)\s*-\s*(.*?)\s*\((.*?)\)$/);
               if (match) {
                 const [_, name, relationship, dob] = match;
-                return formatHousehold({ name, relationship, date_of_birth: formatDate(dob) });
+                return formatHousehold({ name, relationship, date_of_birth: normalizeDate(dob) });
               }
               return null;
             }).filter(Boolean);
@@ -269,7 +217,7 @@ export async function importMembersFromExcel(req, res) {
           // Case 3: comma-separated (legacy)
           return raw.split(",").map((entry) => {
             const [name, relationship, date_of_birth] = entry.split("-").map((s) => s?.trim());
-            return formatHousehold({ name, relationship, date_of_birth: formatDate(date_of_birth) });
+            return formatHousehold({ name, relationship, date_of_birth: normalizeDate(date_of_birth) });
           });
         }
       }
@@ -281,7 +229,7 @@ export async function importMembersFromExcel(req, res) {
       return {
         name: h.name || "",
         relationship: h.relationship || "",
-        date_of_birth: formatDate(h.date_of_birth),
+        date_of_birth: normalizeDate(h.date_of_birth),
       };
     }
 

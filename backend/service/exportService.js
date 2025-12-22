@@ -80,7 +80,7 @@ export async function generateMemberTemplate() {
 
   // Dropdown value lists
   listSheet.getColumn("A").values = ["Gender", "M", "F"];
-  listSheet.getColumn("B").values = ["Marital Status", "Single", "Married", "Divorced", "Widowed"];
+  listSheet.getColumn("B").values = ["Marital Status", "Single", "Young Adult", "Young Married", "Divorced", "Widowed"];
   listSheet.getColumn("C").values = [
     "Age Group",
     "Children",
@@ -91,6 +91,7 @@ export async function generateMemberTemplate() {
   ];
   listSheet.getColumn("E").values = ["Yes/No", "Yes", "No"];
   listSheet.getColumn("F").values = ["Member Status", "Active", "Inactive"];
+  listSheet.getColumn("G").values = ["Consolidation", "Yes", "No", "In Progress"];
 
   // Headers (structured for your importer)
   worksheet.columns = [
@@ -167,7 +168,7 @@ export async function generateMemberTemplate() {
     };
     worksheet.getCell(`E${row}`).dataValidation = {
       type: "list",
-      formulae: ["=Lists!$B$2:$B$5"],
+      formulae: ["=Lists!$B$2:$B$6"],
       showErrorMessage: true,
       errorTitle: "Invalid Marital Status",
       error: "Select a valid marital status.",
@@ -191,6 +192,14 @@ export async function generateMemberTemplate() {
         error: "Select Yes or No.",
       };
     });
+
+    worksheet.getCell(`U${row}`).dataValidation = {
+      type: "list",
+      formulae: ["=Lists!$G$2:$G$4"],
+      showErrorMessage: true,
+      errorTitle: "Invalid Choice",
+      error: "Select Yes, No, or In Progress.",
+    };
 
     worksheet.getCell(`Y${row}`).dataValidation = {
       type: "list",

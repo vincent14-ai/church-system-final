@@ -29,6 +29,8 @@ export function Attendance({ isDark, onToggleTheme }) {
     absentCount: 0,
     totalCount: 0
   });
+  const [timerId, setTimerId] = useState(null);
+  const [isAttendanceLoaded, setIsAttendanceLoaded] = useState(false);
 
   // Fetch all members
   useEffect(() => {
@@ -67,6 +69,7 @@ export function Attendance({ isDark, onToggleTheme }) {
 
         setAttendanceRecords(dbRecords);
         setSummary(summary || { presentCount: 0, absentCount: 0, totalCount: 0 });
+        setIsAttendanceLoaded(true);
 
       } catch (err) {
         console.error("Error fetching attendance:", err);
@@ -83,6 +86,28 @@ export function Attendance({ isDark, onToggleTheme }) {
     );
     setFilteredMembers(filtered);
   }, [searchTerm, members]);
+
+  // Time-based absent marking at 1pm - only after attendance data is loaded
+  useEffect(() => {
+    if (!isAttendanceLoaded || !attendanceRecords.length) return; // Don't proceed until attendance is loaded and records exist
+
+    const now = new Date();
+    const today1pm = new Date();
+    today1pm.setHours(14, 41, 0, 0); // Set to 1:00 PM today
+
+    if (now >= today1pm) {
+      // If it's already past 1pm, apply absents immediately
+      applyTimeBasedAbsents();
+    } else {
+      // If before 1pm, set a timeout to apply at 1pm
+      const timeUntil1pm = today1pm - now;
+      const timeoutId = setTimeout(() => {
+        applyTimeBasedAbsents();
+      }, timeUntil1pm);
+      setTimerId(timeoutId);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedDate, members, isAttendanceLoaded, attendanceRecords]); // Restart on date change, members load, attendance load, or records change
 
   // Mark attendance (save + update state)
   const markAttendance = async (memberId, status) => {
@@ -107,22 +132,17 @@ export function Attendance({ isDark, onToggleTheme }) {
         status,
       });
 
-      // Update local records deterministically so we can calculate the threshold reliably
+      // Update local records
       setAttendanceRecords((prev) => {
-        // create a shallow copy and replace or append the new record
         const existingIndex = prev.findIndex(
           (r) => r.id === memberId && r.date === normalizedDate
         );
         if (existingIndex >= 0) {
           const updated = [...prev];
           updated[existingIndex] = newRecord;
-          // After updating, check threshold and possibly apply defaults
-          applyDefaultAbsentsIfNeeded(normalizedDate, updated);
           return updated;
         }
-        const updated = [...prev, newRecord];
-        applyDefaultAbsentsIfNeeded(normalizedDate, updated);
-        return updated;
+        return [...prev, newRecord];
       });
 
     } catch (err) {
@@ -130,18 +150,12 @@ export function Attendance({ isDark, onToggleTheme }) {
     }
   };
 
-  // Apply default absent for all remaining members once threshold is reached (but keep them editable)
-  const applyDefaultAbsentsIfNeeded = async (date, currentRecords) => {
+  // Apply time-based absent for all unmarked members
+  const applyTimeBasedAbsents = async () => {
     try {
-      const normalized = normalizeDate(date);
-      // Count how many unique members have been explicitly marked for this date
-      const markedIds = new Set(currentRecords.filter(r => r.date === normalized).map(r => r.id));
-      const markedCount = markedIds.size;
-
-      const THRESHOLD = 10;
-      if (markedCount < THRESHOLD) return; // nothing to do yet
-
+      const normalized = normalizeDate(selectedDate);
       // Find members that are not yet marked for this date
+      const markedIds = new Set(attendanceRecords.filter(r => r.date === normalized).map(r => r.id));
       const toMark = filteredMembers.filter(m => !markedIds.has(m.id));
       if (toMark.length === 0) return;
 
@@ -154,7 +168,17 @@ export function Attendance({ isDark, onToggleTheme }) {
         status: 'absent',
       }));
 
-      // Optimistically update local state to include defaults (avoid duplicates)
+      // Persist default absent records to backend first
+      await Promise.all(defaultRecords.map(rec => axios.post("http://localhost:5000/api/attendance/create", {
+        member_id: rec.id,
+        date: rec.date,
+        status: rec.status,
+      }).catch(err => {
+        // log but don't fail the whole batch
+        console.error('Error saving default absent for', rec.id, err);
+      })));
+
+      // Update local state to include defaults (avoid duplicates)
       setAttendanceRecords(prev => {
         const exists = new Set(prev.map(r => `${r.id}-${r.date}`));
         const merged = [...prev];
@@ -165,18 +189,8 @@ export function Attendance({ isDark, onToggleTheme }) {
         return merged;
       });
 
-      // Persist default absent records to backend
-      await Promise.all(defaultRecords.map(rec => axios.post("http://localhost:5000/api/attendance/create", {
-        member_id: rec.id,
-        date: rec.date,
-        status: rec.status,
-      }).catch(err => {
-        // log but don't fail the whole batch
-        console.error('Error saving default absent for', rec.id, err);
-      })));
-
     } catch (err) {
-      console.error('Error applying default absents:', err);
+      console.error('Error applying time-based absents:', err);
     }
   };
 
@@ -251,7 +265,7 @@ export function Attendance({ isDark, onToggleTheme }) {
                     id="date"
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    disabled={true}
                     className="h-11 bg-input-background shadow-sm"
                   />
                 </div>
@@ -334,14 +348,7 @@ export function Attendance({ isDark, onToggleTheme }) {
                                 <UserCheck className="w-4 h-4 mr-1" />
                                 Present
                               </Button>
-                              <Button
-                                variant={status === 'absent' ? 'destructive' : 'outline'}
-                                size="sm"
-                                onClick={() => markAttendance(member.id, 'absent')}
-                              >
-                                <UserX className="w-4 h-4 mr-1" />
-                                Absent
-                              </Button>
+
                             </div>
                           </div>
                         </Card>
