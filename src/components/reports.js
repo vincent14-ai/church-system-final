@@ -303,6 +303,13 @@ function formatDate(dateString, includeTime = false) {
     }
 }
 
+//additional data for gender
+    const genders = [
+        { label: "Male", value: "M" },
+        { label: "Female", value: "F" },
+        { label: "Other", value: "O" },
+    ];
+
 // --- Edit Modal Component (EXTRACTED for performance fix) ---
 const EditModal = ({
     showEditModal,
@@ -410,14 +417,33 @@ const EditModal = ({
                                 {/* Gender Dropdown FIX */}
                                 <div className="space-y-2">
                                     <Label htmlFor="gender" className="text-gray-700 dark:text-gray-300">Gender</Label>
+                                    {/*changed to work with backend
                                     <Select value={editFormData.gender || ""} onValueChange={(val) => handleSelectChange('gender', val)}>
                                         <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"><SelectValue placeholder="Select Gender" /></SelectTrigger>
-                                        <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"> {/* FIX: Light mode background */}
+                                        <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"> {/* FIX: Light mode background 
                                             {['Male', 'Female', 'Other'].map(g =>
                                                 <SelectItem key={g} value={g} className="text-gray-900 dark:text-white">
                                                     {g}
                                                 </SelectItem>
                                             )}
+                                        </SelectContent>
+                                    </Select>*/}
+                                    <Select
+                                        value={editFormData.gender || ""}
+                                        onValueChange={(val) =>
+                                            handleSelectChange("gender", val)
+                                        }
+                                    >
+                                        <SelectTrigger className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
+                                            <SelectValue placeholder="Select Gender" />
+                                        </SelectTrigger>
+
+                                        <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                            {genders.map(({ label, value }) => (
+                                                <SelectItem key={value} value={value}>
+                                                    {label}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -510,7 +536,7 @@ const EditModal = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="date_attended" className="text-gray-700 dark:text-gray-300">First Date Attended</Label>
-                                    <Input id="date_attended" name="date_attended" type="date" value={editFormData.date_attended || ""} onChange={handleEditChange} className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
+                                    <Input id="date_attended" name="date_attended" type="month" value={editFormData.date_attended || ""} onChange={handleEditChange} className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" /> {/*changed date to month*/}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="invited_by" className="text-gray-700 dark:text-gray-300">Invited By (Full Name)</Label>
@@ -944,25 +970,26 @@ export const Reports = ({ isDark, onToggleTheme }) => {
 
 
     // --- Modal Logic ---
+    // edit member
     const handleEdit = async (member_id) => {
-        setIsLoading(true);
         try {
-            //change API back to axios
-            const res = await axios.getById(member_id);
+            console.log("Fetching member:", member_id);
+            const res = await axios.get(`http://localhost:5000/api/members/${member_id}`);
             const member = res.data;
 
-            if (!member) throw new Error("Member not found");
-
+            // Map backend's 'trainings' to frontend's 'spiritual_trainings'
             const parsedTrainings = parseTrainings(member.trainings);
-            const parsedHouseholds = parseHouseholds(member.households);
 
             setEditFormData({
                 ...member,
-                date_of_birth: member.date_of_birth ? new Date(member.date_of_birth).toISOString().split('T')[0] : "",
-                date_attended: member.date_attended ? new Date(member.date_attended).toISOString().split('T')[0] : "",
                 church_ministry: parseChurchMinistry(member.church_ministry),
+                spiritual_trainings: parsedTrainings, // 👈 this ensures it's defined
+                household_members: parseHouseholds(member.households),
+            });
+
+            console.log("🎯 editFormData after mapping:", {
+                ...member,
                 spiritual_trainings: parsedTrainings,
-                household_members: parsedHouseholds,
             });
 
             setSelectedMember(member_id);
@@ -970,11 +997,8 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         } catch (error) {
             console.error("Failed to fetch member for edit:", error);
             toast.error("Unable to load member details");
-        } finally {
-            setIsLoading(false);
         }
     };
-
     const handleEditChange = (e) => {
         const { name, value, type } = e.target;
         if (type !== 'checkbox') {
@@ -992,66 +1016,52 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     };
 
     const handleEditSubmit = async () => {
-        setIsSubmitting(true);
         try {
-            if (!selectedMember) return toast.error("No member selected");
-
-            const payload = {
-                ...editFormData,
-                church_ministry: Array.isArray(editFormData.church_ministry)
-                    ? editFormData.church_ministry.join(", ")
-                    : editFormData.church_ministry || null,
-                trainings: formatTrainings(editFormData.spiritual_trainings),
-                households: formatHouseholds(editFormData.household_members),
-
-                prev_church_attendee: !!editFormData.prev_church_attendee,
-                willing_training: !!editFormData.willing_training,
-                attending_cell_group: !!editFormData.attending_cell_group,
-                water_baptized: !!editFormData.water_baptized,
-            };
-
-            delete payload.spiritual_trainings;
-            delete payload.household_members;
-
-            //change API back to axios
-            await axios.put(selectedMember, payload);
-
-            await fetchMembers();
-
-            toast.success("Member updated successfully!");
-            setShowEditModal(false);
-            setSelectedMember(null);
-        } catch (error) {
-            console.error("Update failed:", error);
-            toast.error("Failed to update member. Please try again.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // delete member
-      const handleDelete = async (member_id) => {
-        const confirmed = window.confirm("Are you sure you want to delete this member?");
-        if (!confirmed) return;
+          if (!selectedMember) return toast.error("No member selected");
     
-        try {
-            //changed API to axios
-          const res = await axios.delete(`http://localhost:5000/api/members/${member_id}`);
+          const payload = {
+            ...editFormData,
+            church_ministry: Array.isArray(editFormData.church_ministry)
+              ? editFormData.church_ministry.join(", ")
+              : editFormData.church_ministry || null,
+            trainings: formatTrainings(editFormData.spiritual_trainings),
+          };
+    
+          await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
           fetchMembers();
-          if (res.status !== 200) throw new Error("Failed to delete member");
     
-          // Remove deleted member from local state
-          setMembers((prev) => prev.filter((m) => m.member_id !== member_id));
-          toast.success("Member deleted successfully!");
-          if (currentMemberRows.length === 1 && currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-          }
-    
+          toast.success("Member updated successfully!");
+          setShowEditModal(false);
+          setSelectedMember(null);
         } catch (error) {
-          console.error("Delete error:", error);
-          toast.error("Failed to delete member. Please try again.");
+          console.error("Update failed:", error);
+          toast.error("Failed to update member. Please try again.");
         }
       };
+
+    // delete member
+    const handleDelete = async (member_id) => {
+        const confirmed = window.confirm("Are you sure you want to delete this member?");
+        if (!confirmed) return;
+
+        try {
+            //changed API to axios
+            const res = await axios.delete(`http://localhost:5000/api/members/${member_id}`);
+            fetchMembers();
+            if (res.status !== 200) throw new Error("Failed to delete member");
+
+            // Remove deleted member from local state
+            setMembers((prev) => prev.filter((m) => m.member_id !== member_id));
+            toast.success("Member deleted successfully!");
+            if (currentMemberRows.length === 1 && currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+            }
+
+        } catch (error) {
+            console.error("Delete error:", error);
+            toast.error("Failed to delete member. Please try again.");
+        }
+    };
 
     const toggleMinistry = (ministry) => {
         setEditFormData(prev => {
@@ -1187,6 +1197,8 @@ export const Reports = ({ isDark, onToggleTheme }) => {
             console.error("Export failed:", err);
         }
     };
+
+    
 
     // --- Component for Member Records ---
     const MemberRecords = () => (

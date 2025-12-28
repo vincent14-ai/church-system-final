@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
-import { Users, Download, Search, Filter, Plus, Trash2, User, Loader2, X, Edit2, ChevronLeft, ChevronRight, Hash, Calendar, Heart } from 'lucide-react'; 
+import { Users, Download, Search, Filter, Plus, Trash2, User, Loader2, X, Edit2, ChevronLeft, ChevronRight, Hash, Calendar, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from "axios";
 import { toast } from "sonner";
@@ -111,62 +111,62 @@ const HARDCODED_MEMBERS = [
 const MOCK_API = {
     members: [...HARDCODED_MEMBERS],
     get: function(url, config) {
-        let filtered = this.members;
-        const { search, age_group, member_status, ministry, training, birth_month, water_baptized, marital_status } = config.params;
+        let filtered = this.members;
+        const { search, age_group, member_status, ministry, training, birth_month, water_baptized, marital_status } = config.params;
 
-        // Simulate Searching
-        if (search) {
-            const lowerSearch = search.toLowerCase();
-            filtered = filtered.filter(m =>
-                m.first_name.toLowerCase().includes(lowerSearch) ||
-                m.last_name.toLowerCase().includes(lowerSearch)
-            );
-        }
+        // Simulate Searching
+        if (search) {
+            const lowerSearch = search.toLowerCase();
+            filtered = filtered.filter(m =>
+                m.first_name.toLowerCase().includes(lowerSearch) ||
+                m.last_name.toLowerCase().includes(lowerSearch)
+            );
+        }
 
-        // Simulate Filtering
-        if (age_group && age_group !== 'all') {
-            filtered = filtered.filter(m => m.age_group === age_group);
-        }
-        if (member_status && member_status !== 'all') {
-            const statusMap = { 'active': 'Active', 'inactive': 'Inactive' };
-            filtered = filtered.filter(m => m.member_status === statusMap[member_status]);
-        }
+        // Simulate Filtering
+        if (age_group && age_group !== 'all') {
+            filtered = filtered.filter(m => m.age_group === age_group);
+        }
+        if (member_status && member_status !== 'all') {
+            const statusMap = { 'active': 'Active', 'inactive': 'Inactive' };
+            filtered = filtered.filter(m => m.member_status === statusMap[member_status]);
+        }
 
-        // NEW: Ministry Filter (Checks if the member's ministry string includes the selected ministry)
-        if (ministry && ministry !== 'all') {
-            const lowerMinistry = ministry.toLowerCase();
-            filtered = filtered.filter(m => m.church_ministry && m.church_ministry.toLowerCase().includes(lowerMinistry));
-        }
+        // NEW: Ministry Filter (Checks if the member's ministry string includes the selected ministry)
+        if (ministry && ministry !== 'all') {
+            const lowerMinistry = ministry.toLowerCase();
+            filtered = filtered.filter(m => m.church_ministry && m.church_ministry.toLowerCase().includes(lowerMinistry));
+        }
 
-        // NEW: Spiritual Training Filter (Checks if the member's training string includes the selected training)
-        if (training && training !== 'all') {
-            const lowerTraining = training.toLowerCase();
-            filtered = filtered.filter(m => m.trainings && m.trainings.toLowerCase().includes(lowerTraining));
-        }
+        // NEW: Spiritual Training Filter (Checks if the member's training string includes the selected training)
+        if (training && training !== 'all') {
+            const lowerTraining = training.toLowerCase();
+            filtered = filtered.filter(m => m.trainings && m.trainings.toLowerCase().includes(lowerTraining));
+        }
 
-        // NEW: Birth Month Filter
-        if (birth_month && birth_month !== 'all') {
-            filtered = filtered.filter(m => {
-                if (!m.date_of_birth) return false;
-                // date_of_birth is 'YYYY-MM-DD...' so month is at index 5 and 6 (e.g., '12' for December)
-                const memberMonth = new Date(m.date_of_birth).getMonth() + 1; // getMonth() is 0-indexed
-                return memberMonth.toString() === birth_month;
-            });
-        }
+        // NEW: Birth Month Filter
+        if (birth_month && birth_month !== 'all') {
+            filtered = filtered.filter(m => {
+                if (!m.date_of_birth) return false;
+                // date_of_birth is 'YYYY-MM-DD...' so month is at index 5 and 6 (e.g., '12' for December)
+                const memberMonth = new Date(m.date_of_birth).getMonth() + 1; // getMonth() is 0-indexed
+                return memberMonth.toString() === birth_month;
+            });
+        }
 
-        // NEW: Water Baptized Filter
-        if (water_baptized && water_baptized !== 'all') {
-            const isBaptized = water_baptized === 'true';
-            filtered = filtered.filter(m => !!m.water_baptized === isBaptized);
-        }
+        // NEW: Water Baptized Filter
+        if (water_baptized && water_baptized !== 'all') {
+            const isBaptized = water_baptized === 'true';
+            filtered = filtered.filter(m => !!m.water_baptized === isBaptized);
+        }
 
-        // NEW: Marital Status Filter
-        if (marital_status && marital_status !== 'all') {
-            filtered = filtered.filter(m => m.marital_status === marital_status);
-        }
+        // NEW: Marital Status Filter
+        if (marital_status && marital_status !== 'all') {
+            filtered = filtered.filter(m => m.marital_status === marital_status);
+        }
 
-        return Promise.resolve({ data: filtered });
-    },
+        return Promise.resolve({ data: filtered });
+    },
     getById: function(id) {
         const member = this.members.find(m => m.member_id === id);
         return Promise.resolve({ data: member });
@@ -214,7 +214,7 @@ function parseHouseholds(householdsString) {
         const match = trimmed.match(/^(.*?)\s*-\s*(.*?)\s*\((\d{4}-\d{2}-\d{2})\)$/);
         if (match) {
             const [, name, relationship, date_of_birth] = match;
-            return { id: Math.random().toString(36).substring(2, 9), name, relationship, date_of_birth }; 
+            return { id: Math.random().toString(36).substring(2, 9), name, relationship, date_of_birth };
         }
 
         return null;
@@ -275,15 +275,16 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
     const [selectedAgeGroup, setSelectedAgeGroup] = useState("all");
     const [selectedStatus, setSelectedStatus] = useState("all");
     const [selectedMinistry, setSelectedMinistry] = useState("all");
-    const [selectedTraining, setSelectedTraining] = useState("all"); 
-    const [selectedBirthMonth, setSelectedBirthMonth] = useState("all"); 
-    const [selectedWaterBaptized, setSelectedWaterBaptized] = useState("all"); 
-    const [selectedMaritalStatus, setSelectedMaritalStatus] = useState("all"); 
+    const [selectedTraining, setSelectedTraining] = useState("all");
+    const [selectedBirthMonth, setSelectedBirthMonth] = useState("all");
+    const [selectedWaterBaptized, setSelectedWaterBaptized] = useState("all");
+    const [selectedMaritalStatus, setSelectedMaritalStatus] = useState("all");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const rowsPerPage = 10;
-    
+
     const startIndex = (currentPage - 1) * rowsPerPage;
     const currentMemberRows = members.slice(startIndex, startIndex + rowsPerPage);
 
@@ -298,23 +299,25 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
     // UPDATED: Added new ministries - "Kids Ministry" and "Technical"
     const ministries = ["Media", "Praise Team", "Content Writer", "Ushering", "Kids Ministry", "Technical", "Others"];
     const trainings = ["Life Class", "SOL 1", "SOL 2", "SOL 3"];
-    
+
     //const API = MOCK_API; 
+
+    const fileInputRef = useRef(null);
 
     const fetchMembers = async () => {
         try {
             //changed API to axios
-            const res = await axios.get("http://localhost:5000/api/members", { 
+            const res = await axios.get("http://localhost:5000/api/members", {
                 params: {
                     search: searchTerm,
                     age_group: selectedAgeGroup,
                     member_status: selectedStatus,
                     ministry: selectedMinistry,
-                    training: selectedTraining, 
-                    birth_month: selectedBirthMonth, 
-                    water_baptized: selectedWaterBaptized, 
-                    marital_status: selectedMaritalStatus, 
-                    date_from: startDate, 
+                    training: selectedTraining,
+                    birth_month: selectedBirthMonth,
+                    water_baptized: selectedWaterBaptized,
+                    marital_status: selectedMaritalStatus,
+                    date_from: startDate,
                     date_to: endDate,
                 },
             });
@@ -326,16 +329,16 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
         }
     };
 
-    const handleEdit = async (member_id) => {
+    /*const handleEdit = async (member_id) => {
         try {
             //changed API to axios
-            const res = await axios.getById(member_id); 
+            const res = await axios.getById(member_id);
             const member = res.data;
 
             if (!member) throw new Error("Member not found");
 
             const parsedTrainings = parseTrainings(member.trainings);
-            const parsedHouseholds = parseHouseholds(member.households); 
+            const parsedHouseholds = parseHouseholds(member.households);
 
             setEditFormData({
                 ...member,
@@ -343,12 +346,42 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                 date_attended: member.date_attended ? new Date(member.date_attended).toISOString().split('T')[0] : "",
                 church_ministry: parseChurchMinistry(member.church_ministry),
                 spiritual_trainings: parsedTrainings,
-                household_members: parsedHouseholds, 
+                household_members: parsedHouseholds,
             });
 
             setSelectedMember(member_id);
             setShowEditModal(true);
             setActiveTab("personal"); // Reset tab on open
+        } catch (error) {
+            console.error("Failed to fetch member for edit:", error);
+            toast.error("Unable to load member details");
+        }
+    };*/
+
+    // edit member
+    const handleEdit = async (member_id) => {
+        try {
+            console.log("Fetching member:", member_id);
+            const res = await axios.get(`http://localhost:5000/api/members/${member_id}`);
+            const member = res.data;
+
+            // Map backend's 'trainings' to frontend's 'spiritual_trainings'
+            const parsedTrainings = parseTrainings(member.trainings);
+
+            setEditFormData({
+                ...member,
+                church_ministry: parseChurchMinistry(member.church_ministry),
+                spiritual_trainings: parsedTrainings, // 👈 this ensures it's defined
+                household_members: parseHouseholds(member.households),
+            });
+
+            console.log("🎯 editFormData after mapping:", {
+                ...member,
+                spiritual_trainings: parsedTrainings,
+            });
+
+            setSelectedMember(member_id);
+            setShowEditModal(true);
         } catch (error) {
             console.error("Failed to fetch member for edit:", error);
             toast.error("Unable to load member details");
@@ -365,39 +398,28 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
     };
 
     const handleEditSubmit = async () => {
-        setIsSubmitting(true);
         try {
-            if (!selectedMember) return toast.error("No member selected");
-
-            const payload = {
-                ...editFormData,
-                // Format arrays/objects back into strings for database/API
-                church_ministry: Array.isArray(editFormData.church_ministry)
-                    ? editFormData.church_ministry.join(", ")
-                    : editFormData.church_ministry || null,
-                trainings: formatTrainings(editFormData.spiritual_trainings), 
-                households: formatHouseholds(editFormData.household_members),
-            };
-            
-            // Clean up temporary form fields
-            delete payload.spiritual_trainings;
-            delete payload.household_members;
-
-            //changed API to axios
-            await axios.put(selectedMember, payload); 
-            
-            await fetchMembers(); 
-
-            toast.success("Member updated successfully!");
-            setShowEditModal(false);
-            setSelectedMember(null);
+          if (!selectedMember) return toast.error("No member selected");
+    
+          const payload = {
+            ...editFormData,
+            church_ministry: Array.isArray(editFormData.church_ministry)
+              ? editFormData.church_ministry.join(", ")
+              : editFormData.church_ministry || null,
+            trainings: formatTrainings(editFormData.spiritual_trainings),
+          };
+    
+          await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
+          fetchMembers();
+    
+          toast.success("Member updated successfully!");
+          setShowEditModal(false);
+          setSelectedMember(null);
         } catch (error) {
-            console.error("Update failed:", error);
-            toast.error("Failed to update member. Please try again.");
-        } finally {
-            setIsSubmitting(false);
+          console.error("Update failed:", error);
+          toast.error("Failed to update member. Please try again.");
         }
-    };
+      };
 
     const handleDelete = async (member_id) => {
         const confirmed = window.confirm("Are you sure you want to delete this member?");
@@ -405,7 +427,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
 
         try {
             //changed API to axios
-            const res = await axios.delete(member_id); 
+            const res = await axios.delete(member_id);
             if (res.status !== 200) throw new Error("Failed to delete member");
 
             setMembers((prev) => prev.filter((m) => m.member_id !== member_id));
@@ -425,7 +447,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
             return { ...prev, church_ministry: next };
         });
     };
-    
+
     const toggleTraining = (training) => {
         setEditFormData(prev => {
             const currentTrainings = prev.spiritual_trainings || {};
@@ -437,12 +459,12 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                 delete newTrainings[`${training}Year`];
                 return { ...prev, spiritual_trainings: newTrainings };
             } else {
-                return { 
-                    ...prev, 
-                    spiritual_trainings: { 
-                        ...currentTrainings, 
-                        [training]: true 
-                    } 
+                return {
+                    ...prev,
+                    spiritual_trainings: {
+                        ...currentTrainings,
+                        [training]: true
+                    }
                 };
             }
         });
@@ -463,11 +485,11 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
             ...prev,
             household_members: [
                 ...(prev.household_members || []),
-                { 
-                    id: Math.random().toString(36).substring(2, 9), 
-                    name: "", 
-                    relationship: "", 
-                    date_of_birth: "" 
+                {
+                    id: Math.random().toString(36).substring(2, 9),
+                    name: "",
+                    relationship: "",
+                    date_of_birth: ""
                 }
             ]
         }));
@@ -476,7 +498,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
     const handleHouseholdMemberChange = (id, field, value) => {
         setEditFormData(prev => ({
             ...prev,
-            household_members: (prev.household_members || []).map(member => 
+            household_members: (prev.household_members || []).map(member =>
                 member.id === id ? { ...member, [field]: value } : member
             )
         }));
@@ -503,16 +525,16 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
         setSearchTerm("");
         setSelectedAgeGroup("all");
         setSelectedStatus("all");
-        setSelectedMinistry("all"); 
-        setSelectedTraining("all"); 
-        setSelectedBirthMonth("all"); 
-        setSelectedWaterBaptized("all"); 
-        setSelectedMaritalStatus("all"); 
+        setSelectedMinistry("all");
+        setSelectedTraining("all");
+        setSelectedBirthMonth("all");
+        setSelectedWaterBaptized("all");
+        setSelectedMaritalStatus("all");
         setStartDate("");
         setEndDate("");
         // Use a timeout or useEffect for a slight delay to ensure state updates trigger the fetch, or pass state directly.
         // For simplicity and to simulate a state-driven fetch:
-        setTimeout(fetchMembers, 0); 
+        setTimeout(fetchMembers, 0);
     };
 
     // Initial fetch on component mount 
@@ -531,7 +553,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                 return <Badge variant="outline">{status}</Badge>;
         }
     };
-    
+
     // Helper for table data formatting
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -541,6 +563,95 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
             return dateString;
         }
     };
+
+    const handleImport = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setIsLoading(true);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const response = await axios.post("http://localhost:5000/api/import", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            const { message, importedCount, failedRows } = response.data;
+
+            // Single toast for both success and partial failure
+            if (!failedRows || failedRows.length === 0) {
+                toast.success(message || `Successfully imported ${importedCount} members.`);
+            } else {
+                toast(
+                    <div className="space-y-2">
+                        <div className="font-semibold text-green-600">
+                            Imported {importedCount} new data.
+                        </div>
+
+                        <div className="space-y-1">
+                            {failedRows.map((msg, idx) => (
+                                <div key={idx} className="text-red-500 text-sm">
+                                    {msg}
+                                </div>
+                            ))}
+                        </div>
+                    </div>,
+                    { duration: 15000 }
+                );
+            }
+
+        } catch (err) {
+            console.error("Upload failed:", err);
+            toast.error("Import failed", {
+                description: "Check your data format before importing.",
+                duration: 15000,
+            });
+        } finally {
+            setIsLoading(false);
+            fetchMembers();
+        }
+    };
+
+    //export members report
+    const handleExportPost = async () => {
+        try {
+            const filters = {
+                age_group: selectedAgeGroup,
+                member_status: selectedStatus,
+                date_from: startDate,
+                date_to: endDate,
+            };
+
+            const res = await axios.post(
+                "http://localhost:5000/api/export/members/export",
+                filters,
+                { responseType: "blob" }
+            );
+
+            const blob = new Blob([res.data], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "members_report.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Export failed:", err);
+        }
+    };
+
+    //additional data for gender
+    const genders = [
+        { label: "Male", value: "M" },
+        { label: "Female", value: "F" },
+        { label: "Other", value: "O" },
+    ];
 
 
     return (
@@ -566,175 +677,175 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
             </div>
             {/* --- Main Content Area --- */}
             <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
-    <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-    >
-        <Card className="shadow-2xl border-none bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-4 sm:p-6 lg:p-8">
-            {/* Filters Section */}
-            <Card className="p-5 bg-gray-50 dark:bg-gray-900 shadow-inner border border-gray-200 dark:border-gray-700 mb-8">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-indigo-500/10 dark:bg-indigo-300/10 rounded-lg flex items-center justify-center shrink-0">
-                            <Filter className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">Filter & Search Members</h3>
-                    </div>
-                    <div className="relative flex-grow sm:flex-grow-0 sm:ml-auto w-full sm:w-72">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                        <Input
-                            type="text"
-                            placeholder="Search by name..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all shadow-sm"
-                        />
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="ageGroup" className="text-gray-700 dark:text-gray-300 font-medium">Age Group</Label>
-                        <Select
-                            value={selectedAgeGroup}
-                            onValueChange={setSelectedAgeGroup}
-                        >
-                            <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                <SelectValue placeholder="Select Age Group" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-gray-800">
-                                <SelectItem value="all"className="text-gray-900 dark:text-white">All Age Groups</SelectItem>
-                                <SelectItem value="Children"className="text-gray-900 dark:text-white">Children</SelectItem>
-                                <SelectItem value="Youth"className="text-gray-900 dark:text-white">Youth</SelectItem>
-                                <SelectItem value="Young Adult"className="text-gray-900 dark:text-white">Young Adult</SelectItem>
-                                <SelectItem value="Couples"className="text-gray-900 dark:text-white">Couples</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="member_status" className="text-gray-700 dark:text-gray-300 font-medium">Status</Label>
-                        <Select
-                            value={selectedStatus}
-                            onValueChange={setSelectedStatus}
-                        >
-                            <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                <SelectValue placeholder="Select Status" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-gray-800">
-                                <SelectItem value="all"className="text-gray-900 dark:text-white">All Status</SelectItem>
-                                <SelectItem value="active"className="text-gray-900 dark:text-white">Active</SelectItem>
-                                <SelectItem value="inactive"className="text-gray-900 dark:text-white">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="ministry" className="text-gray-700 dark:text-gray-300 font-medium">Ministry</Label>
-                        <Select value={selectedMinistry} onValueChange={setSelectedMinistry}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                <SelectValue placeholder="Select Ministry" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-gray-800">
-                                <SelectItem value="all" className="text-gray-900 dark:text-white">All Ministries</SelectItem>
-                                {ministries.map(m => (
-                                    <SelectItem key={m} value={m} className="text-gray-900 dark:text-white">{m}</SelectItem>
-                                ))}
-                                <SelectItem value="Others" className="text-gray-900 dark:text-white">Others</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="training" className="text-gray-700 dark:text-gray-300 font-medium">Spiritual Training</Label>
-                        <Select value={selectedTraining} onValueChange={setSelectedTraining}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                <SelectValue placeholder="Select Training" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-gray-800">
-                                <SelectItem value="all" className="text-gray-900 dark:text-white">All Trainings</SelectItem>
-                                {trainings.map(t => (
-                                    <SelectItem key={t} value={t} className="text-gray-900 dark:text-white">{t}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="birthMonth" className="text-gray-700 dark:text-gray-300 font-medium">Birth Month</Label>
-                        <Select value={selectedBirthMonth} onValueChange={setSelectedBirthMonth}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                <SelectValue placeholder="Select Month" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-gray-800">
-                                <SelectItem value="all" className="text-gray-900 dark:text-white">All Months</SelectItem>
-                                {Array.from({ length: 12 }, (_, i) => i + 1).map(monthNum => {
-                                    const monthName = new Date(0, monthNum - 1).toLocaleString('en-US', { month: 'long' });
-                                    return <SelectItem key={monthNum} value={monthNum.toString()} className="text-gray-900 dark:text-white">{monthName}</SelectItem>;
-                                })}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="waterBaptized" className="text-gray-700 dark:text-gray-300 font-medium">Water Baptized</Label>
-                        <Select value={selectedWaterBaptized} onValueChange={setSelectedWaterBaptized}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                <SelectValue placeholder="Select Status" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-gray-800">
-                                <SelectItem value="all" className="text-gray-900 dark:text-white">All Members</SelectItem>
-                                <SelectItem value="true" className="text-gray-900 dark:text-white">Yes</SelectItem>
-                                <SelectItem value="false" className="text-gray-900 dark:text-white">No</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <Card className="shadow-2xl border-none bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-4 sm:p-6 lg:p-8">
+                        {/* Filters Section */}
+                        <Card className="p-5 bg-gray-50 dark:bg-gray-900 shadow-inner border border-gray-200 dark:border-gray-700 mb-8">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-indigo-500/10 dark:bg-indigo-300/10 rounded-lg flex items-center justify-center shrink-0">
+                                        <Filter className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">Filter & Search Members</h3>
+                                </div>
+                                <div className="relative flex-grow sm:flex-grow-0 sm:ml-auto w-full sm:w-72">
+                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                                    <Input
+                                        type="text"
+                                        placeholder="Search by name..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all shadow-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="ageGroup" className="text-gray-700 dark:text-gray-300 font-medium">Age Group</Label>
+                                    <Select
+                                        value={selectedAgeGroup}
+                                        onValueChange={setSelectedAgeGroup}
+                                    >
+                                        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                            <SelectValue placeholder="Select Age Group" />
+                                        </SelectTrigger>
+                                        <SelectContent className="dark:bg-gray-800">
+                                            <SelectItem value="all" className="text-gray-900 dark:text-white">All Age Groups</SelectItem>
+                                            <SelectItem value="Children" className="text-gray-900 dark:text-white">Children</SelectItem>
+                                            <SelectItem value="Youth" className="text-gray-900 dark:text-white">Youth</SelectItem>
+                                            <SelectItem value="Young Adult" className="text-gray-900 dark:text-white">Young Adult</SelectItem>
+                                            <SelectItem value="Couples" className="text-gray-900 dark:text-white">Couples</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="member_status" className="text-gray-700 dark:text-gray-300 font-medium">Status</Label>
+                                    <Select
+                                        value={selectedStatus}
+                                        onValueChange={setSelectedStatus}
+                                    >
+                                        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                            <SelectValue placeholder="Select Status" />
+                                        </SelectTrigger>
+                                        <SelectContent className="dark:bg-gray-800">
+                                            <SelectItem value="all" className="text-gray-900 dark:text-white">All Status</SelectItem>
+                                            <SelectItem value="active" className="text-gray-900 dark:text-white">Active</SelectItem>
+                                            <SelectItem value="inactive" className="text-gray-900 dark:text-white">Inactive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="ministry" className="text-gray-700 dark:text-gray-300 font-medium">Ministry</Label>
+                                    <Select value={selectedMinistry} onValueChange={setSelectedMinistry}>
+                                        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                            <SelectValue placeholder="Select Ministry" />
+                                        </SelectTrigger>
+                                        <SelectContent className="dark:bg-gray-800">
+                                            <SelectItem value="all" className="text-gray-900 dark:text-white">All Ministries</SelectItem>
+                                            {ministries.map(m => (
+                                                <SelectItem key={m} value={m} className="text-gray-900 dark:text-white">{m}</SelectItem>
+                                            ))}
+                                            <SelectItem value="Others" className="text-gray-900 dark:text-white">Others</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="training" className="text-gray-700 dark:text-gray-300 font-medium">Spiritual Training</Label>
+                                    <Select value={selectedTraining} onValueChange={setSelectedTraining}>
+                                        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                            <SelectValue placeholder="Select Training" />
+                                        </SelectTrigger>
+                                        <SelectContent className="dark:bg-gray-800">
+                                            <SelectItem value="all" className="text-gray-900 dark:text-white">All Trainings</SelectItem>
+                                            {trainings.map(t => (
+                                                <SelectItem key={t} value={t} className="text-gray-900 dark:text-white">{t}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="birthMonth" className="text-gray-700 dark:text-gray-300 font-medium">Birth Month</Label>
+                                    <Select value={selectedBirthMonth} onValueChange={setSelectedBirthMonth}>
+                                        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                            <SelectValue placeholder="Select Month" />
+                                        </SelectTrigger>
+                                        <SelectContent className="dark:bg-gray-800">
+                                            <SelectItem value="all" className="text-gray-900 dark:text-white">All Months</SelectItem>
+                                            {Array.from({ length: 12 }, (_, i) => i + 1).map(monthNum => {
+                                                const monthName = new Date(0, monthNum - 1).toLocaleString('en-US', { month: 'long' });
+                                                return <SelectItem key={monthNum} value={monthNum.toString()} className="text-gray-900 dark:text-white">{monthName}</SelectItem>;
+                                            })}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="waterBaptized" className="text-gray-700 dark:text-gray-300 font-medium">Water Baptized</Label>
+                                    <Select value={selectedWaterBaptized} onValueChange={setSelectedWaterBaptized}>
+                                        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                            <SelectValue placeholder="Select Status" />
+                                        </SelectTrigger>
+                                        <SelectContent className="dark:bg-gray-800">
+                                            <SelectItem value="all" className="text-gray-900 dark:text-white">All Members</SelectItem>
+                                            <SelectItem value="true" className="text-gray-900 dark:text-white">Yes</SelectItem>
+                                            <SelectItem value="false" className="text-gray-900 dark:text-white">No</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="maritalStatus" className="text-gray-700 dark:text-gray-300 font-medium">Marital Status</Label>
-                        <Select value={selectedMaritalStatus} onValueChange={setSelectedMaritalStatus}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                <SelectValue placeholder="Select Status" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-gray-800">
-                                <SelectItem value="all" className="text-gray-900 dark:text-white">All Status</SelectItem>
-                                <SelectItem value="Single" className="text-gray-900 dark:text-white">Single</SelectItem>
-                                <SelectItem value="Married" className="text-gray-900 dark:text-white">Married</SelectItem>
-                                <SelectItem value="Widow/Widower" className="text-gray-900 dark:text-white">Widow/Widower</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="dateFrom" className="text-gray-700 dark:text-gray-300 font-medium">Date From</Label>
-                        <Input
-                            id="dateFrom"
-                            type="month"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="dateTo" className="text-gray-700 dark:text-gray-300 font-medium">Date To</Label>
-                        <Input
-                            id="dateTo"
-                            type="month"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                        />
-                    </div>
-                    
-                    {/* 👇 FIX APPLIED HERE: Using flex-col and justify-end to align buttons to the bottom of the column cell. */}
-                    <div className="flex flex-col justify-end col-span-2 md:col-span-3 lg:col-span-1 gap-2">
-                        <Button
-                            variant="default"
-                            onClick={handleApplyFilters}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-colors h-10"
-                        >
-                            Apply Filters
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={handleClearFilters}
-                            className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors h-10"
-                        >
-                            Clear
+                                <div className="space-y-2">
+                                    <Label htmlFor="maritalStatus" className="text-gray-700 dark:text-gray-300 font-medium">Marital Status</Label>
+                                    <Select value={selectedMaritalStatus} onValueChange={setSelectedMaritalStatus}>
+                                        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                            <SelectValue placeholder="Select Status" />
+                                        </SelectTrigger>
+                                        <SelectContent className="dark:bg-gray-800">
+                                            <SelectItem value="all" className="text-gray-900 dark:text-white">All Status</SelectItem>
+                                            <SelectItem value="Single" className="text-gray-900 dark:text-white">Single</SelectItem>
+                                            <SelectItem value="Married" className="text-gray-900 dark:text-white">Married</SelectItem>
+                                            <SelectItem value="Widow/Widower" className="text-gray-900 dark:text-white">Widow/Widower</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="dateFrom" className="text-gray-700 dark:text-gray-300 font-medium">Date From</Label>
+                                    <Input
+                                        id="dateFrom"
+                                        type="month"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="dateTo" className="text-gray-700 dark:text-gray-300 font-medium">Date To</Label>
+                                    <Input
+                                        id="dateTo"
+                                        type="month"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                    />
+                                </div>
+
+                                {/* 👇 FIX APPLIED HERE: Using flex-col and justify-end to align buttons to the bottom of the column cell. */}
+                                <div className="flex flex-col justify-end col-span-2 md:col-span-3 lg:col-span-1 gap-2">
+                                    <Button
+                                        variant="default"
+                                        onClick={handleApplyFilters}
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-colors h-10"
+                                    >
+                                        Apply Filters
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleClearFilters}
+                                        className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors h-10"
+                                    >
+                                        Clear
                                     </Button>
                                 </div>
                             </div>
@@ -748,16 +859,23 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                     Member Records (<span className="text-indigo-600 dark:text-indigo-400">{members.length}</span> total)
                                 </h3>
                             </div>
-                              <div className="flex gap-3"> 
-                                    <Button variant="outline" className="flex items-center gap-2 border-indigo-400 text-indigo-600 dark:border-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors">
-                                        <Download className="w-4 h-4" /> Import CSV
-                                    </Button>
-                                    <Button variant="outline" className="flex items-center gap-2 border-indigo-400 text-indigo-600 dark:border-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors">
-                                        <Download className="w-4 h-4 mr-1" /> Export CSV
-                                    </Button>
-                                </div>
+                            <div className="flex gap-3">
+                                <input
+                                    type="file"
+                                    accept=".xlsx,.xls"
+                                    ref={fileInputRef}
+                                    onChange={handleImport}
+                                    className="hidden"
+                                />
+                                <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="flex items-center gap-2 border-indigo-400 text-indigo-600 dark:border-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors">
+                                    <Download className="w-4 h-4" /> Import CSV
+                                </Button>
+                                <Button onClick={handleExportPost} variant="outline" className="flex items-center gap-2 border-indigo-400 text-indigo-600 dark:border-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors">
+                                    <Download className="w-4 h-4 mr-1" /> Export CSV
+                                </Button>
                             </div>
-                        
+                        </div>
+
 
                         {/* Members Table */}
                         <Card className="overflow-x-auto border border-gray-200 dark:border-gray-700 shadow-xl rounded-lg">
@@ -852,7 +970,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                             <Pagination>
                                 <PaginationContent>
                                     <PaginationItem>
-                                        <PaginationPrevious 
+                                        <PaginationPrevious
                                             href="#"
                                             onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.max(1, prev - 1)); }}
                                             disabled={currentPage === 1}
@@ -872,7 +990,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                         </PaginationItem>
                                     ))}
                                     <PaginationItem>
-                                        <PaginationNext 
+                                        <PaginationNext
                                             href="#"
                                             onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.min(totalMemberPages, prev + 1)); }}
                                             disabled={currentPage === totalMemberPages || totalMemberPages === 0}
@@ -908,14 +1026,14 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                     {/* Tabs for organization - Now using 2 tabs */}
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
                         <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-gray-100 dark:bg-gray-700 rounded-xl shadow-inner">
-                            <TabsTrigger 
-                                value="personal" 
+                            <TabsTrigger
+                                value="personal"
                                 className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:font-semibold transition-all text-gray-700 dark:text-gray-300 dark:data-[state=active]:bg-indigo-500 rounded-lg py-2"
                             >
                                 <User className="w-4 h-4 mr-2" /> Personal & Household
                             </TabsTrigger>
-                            <TabsTrigger 
-                                value="church" 
+                            <TabsTrigger
+                                value="church"
                                 className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:font-semibold transition-all text-gray-700 dark:text-gray-300 dark:data-[state=active]:bg-indigo-500 rounded-lg py-2"
                             >
                                 <Calendar className="w-4 h-4 mr-2" /> Church Details
@@ -930,45 +1048,45 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="firstName" className="font-semibold text-indigo-600 dark:text-indigo-400">First Name</Label>
-                                        <Input 
-                                            id="firstName" 
-                                            name="first_name" 
-                                            value={editFormData.first_name || ""} 
-                                            onChange={handleEditChange} 
+                                        <Input
+                                            id="firstName"
+                                            name="first_name"
+                                            value={editFormData.first_name || ""}
+                                            onChange={handleEditChange}
                                             // FIX: Dark mode styling for Input
                                             className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="lastName" className="font-semibold text-indigo-600 dark:text-indigo-400">Last Name</Label>
-                                        <Input 
-                                            id="lastName" 
-                                            name="last_name" 
-                                            value={editFormData.last_name || ""} 
-                                            onChange={handleEditChange} 
+                                        <Input
+                                            id="lastName"
+                                            name="last_name"
+                                            value={editFormData.last_name || ""}
+                                            onChange={handleEditChange}
                                             // FIX: Dark mode styling for Input
                                             className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="contactNumber" className="font-semibold text-indigo-600 dark:text-indigo-400">Contact Number</Label>
-                                        <Input 
-                                            id="contactNumber" 
-                                            name="contact_number" 
-                                            value={editFormData.contact_number || ""} 
-                                            onChange={handleEditChange} 
+                                        <Input
+                                            id="contactNumber"
+                                            name="contact_number"
+                                            value={editFormData.contact_number || ""}
+                                            onChange={handleEditChange}
                                             // FIX: Dark mode styling for Input
                                             className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="dateOfBirth" className="font-semibold text-indigo-600 dark:text-indigo-400">Date of Birth</Label>
-                                        <Input 
-                                            id="dateOfBirth" 
-                                            type="date" 
-                                            name="date_of_birth" 
-                                            value={editFormData.date_of_birth || ""} 
-                                            onChange={handleEditChange} 
+                                        <Input
+                                            id="dateOfBirth"
+                                            type="date"
+                                            name="date_of_birth"
+                                            value={editFormData.date_of_birth || ""}
+                                            onChange={handleEditChange}
                                             // FIX: Dark mode styling for Input
                                             className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                         />
@@ -991,6 +1109,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="gender" className="font-semibold text-indigo-600 dark:text-indigo-400">Gender</Label>
+                                        {/* changed to work with the backend
                                         <Select
                                             value={editFormData.gender || ""}
                                             onValueChange={(val) => handleSelectChange("gender", val)}
@@ -1003,7 +1122,26 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                                     <SelectItem key={gender} value={gender}>{gender}</SelectItem>
                                                 ))}
                                             </SelectContent>
+                                        </Select>*/}
+                                        <Select
+                                            value={editFormData.gender || ""}
+                                            onValueChange={(val) =>
+                                                setEditFormData((prev) => ({ ...prev, gender: val }))
+                                            }
+                                        >
+                                            <SelectTrigger className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
+                                                <SelectValue placeholder="Select Gender" />
+                                            </SelectTrigger>
+
+                                            <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                                {genders.map(({ label, value }) => (
+                                                    <SelectItem key={value} value={value}>
+                                                        {label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
                                         </Select>
+
                                     </div>
                                 </div>
                             </Card>
@@ -1013,13 +1151,13 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                 <CardTitle className="mb-4 text-xl font-bold text-gray-800 dark:text-gray-200">Address Details</CardTitle>
                                 <div className="space-y-2">
                                     <Label htmlFor="address" className="font-semibold text-indigo-600 dark:text-indigo-400">Full Address</Label>
-                                    <Textarea 
-                                        id="address" 
-                                        name="address" 
-                                        value={editFormData.address || ""} 
-                                        onChange={handleEditChange} 
-                                        rows={3} 
-                                        placeholder="123 Main St, City, Province" 
+                                    <Textarea
+                                        id="address"
+                                        name="address"
+                                        value={editFormData.address || ""}
+                                        onChange={handleEditChange}
+                                        rows={3}
+                                        placeholder="123 Main St, City, Province"
                                         // FIX: Dark mode styling for Textarea
                                         className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                     />
@@ -1039,9 +1177,9 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                         <div key={member.id} className="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-12 gap-3 p-4 rounded-xl bg-white dark:bg-gray-800 shadow-lg border border-blue-200 dark:border-blue-700">
                                             <div className="space-y-1 lg:col-span-4">
                                                 <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</Label>
-                                                <Input 
-                                                    value={member.name} 
-                                                    onChange={(e) => handleHouseholdMemberChange(member.id, 'name', e.target.value)} 
+                                                <Input
+                                                    value={member.name}
+                                                    onChange={(e) => handleHouseholdMemberChange(member.id, 'name', e.target.value)}
                                                     placeholder="Full Name"
                                                     // FIX: Dark mode styling for Input
                                                     className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
@@ -1049,9 +1187,9 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                             </div>
                                             <div className="space-y-1 lg:col-span-3">
                                                 <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Relationship</Label>
-                                                <Input 
-                                                    value={member.relationship} 
-                                                    onChange={(e) => handleHouseholdMemberChange(member.id, 'relationship', e.target.value)} 
+                                                <Input
+                                                    value={member.relationship}
+                                                    onChange={(e) => handleHouseholdMemberChange(member.id, 'relationship', e.target.value)}
                                                     placeholder="Spouse, Child, Parent"
                                                     // FIX: Dark mode styling for Input
                                                     className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
@@ -1059,10 +1197,10 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                             </div>
                                             <div className="space-y-1 lg:col-span-3">
                                                 <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date of Birth</Label>
-                                                <Input 
+                                                <Input
                                                     type="date"
-                                                    value={member.date_of_birth} 
-                                                    onChange={(e) => handleHouseholdMemberChange(member.id, 'date_of_birth', e.target.value)} 
+                                                    value={member.date_of_birth}
+                                                    onChange={(e) => handleHouseholdMemberChange(member.id, 'date_of_birth', e.target.value)}
                                                     // FIX: Dark mode styling for Input
                                                     className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                                 />
@@ -1091,24 +1229,24 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="dateAttended" className="font-medium text-gray-700 dark:text-gray-300">First Date Attended</Label>
-                                        <Input 
-                                            id="dateAttended" 
-                                            type="date" 
-                                            name="date_attended" 
-                                            value={editFormData.date_attended || ""} 
-                                            onChange={handleEditChange} 
+                                        <Input
+                                            id="dateAttended"
+                                            type="month" //changed from date to month to work with backend
+                                            name="date_attended"
+                                            value={editFormData.date_attended || ""}
+                                            onChange={handleEditChange}
                                             // FIX: Dark mode styling for Input
                                             className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="invitedBy" className="font-medium text-gray-700 dark:text-gray-300">Invited By (Full Name)</Label>
-                                        <Input 
-                                            id="invitedBy" 
-                                            name="invited_by" 
-                                            value={editFormData.invited_by || ""} 
-                                            onChange={handleEditChange} 
-                                            placeholder="Pastor Mark / Michael Chen" 
+                                        <Input
+                                            id="invitedBy"
+                                            name="invited_by"
+                                            value={editFormData.invited_by || ""}
+                                            onChange={handleEditChange}
+                                            placeholder="Pastor Mark / Michael Chen"
                                             // FIX: Dark mode styling for Input
                                             className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                         />
@@ -1120,7 +1258,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                             <Card className="p-6 shadow-md border-t-4 border-purple-500 dark:border-purple-600 bg-purple-50/50 dark:bg-gray-700/50">
                                 <CardTitle className="text-xl font-bold mb-4 text-purple-700 dark:text-purple-400">Previous Church History</CardTitle>
                                 {/* Using grid-cols-3 for 1/3 and 2/3 split and consistency */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> 
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="space-y-2 col-span-1 flex flex-col"> {/* Use flex-col to force alignment of label and field */}
                                         <Label htmlFor="prevChurchAttendee" className="font-medium text-gray-700 dark:text-gray-300">Attended previous church?</Label>
                                         <Select
@@ -1138,14 +1276,14 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                     </div>
                                     <div className="space-y-2 col-span-2 flex flex-col"> {/* Use flex-col to force alignment of label and field */}
                                         <Label htmlFor="prevChurch" className="font-medium text-gray-700 dark:text-gray-300 transition-opacity duration-300">Previous Church Name</Label>
-                                        <Input 
-                                            id="prevChurch" 
-                                            name="prev_church" 
-                                            value={editFormData.prev_church || ""} 
-                                            onChange={handleEditChange} 
-                                            disabled={!editFormData.prev_church_attendee} 
+                                        <Input
+                                            id="prevChurch"
+                                            name="prev_church"
+                                            value={editFormData.prev_church || ""}
+                                            onChange={handleEditChange}
+                                            disabled={!editFormData.prev_church_attendee}
                                             // FIX: Dark mode styling for Input
-                                            className={`dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 ${!editFormData.prev_church_attendee ? 'opacity-50' : ''}`} 
+                                            className={`dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 ${!editFormData.prev_church_attendee ? 'opacity-50' : ''}`}
                                         />
                                     </div>
                                 </div>
@@ -1154,7 +1292,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                             {/* Consolidation & Status - FINAL ALIGNMENT FIX */}
                             <Card className="p-6 shadow-md border-t-4 border-green-500 dark:border-green-600 bg-green-50/50 dark:bg-gray-700/50">
                                 <CardTitle className="text-xl font-bold mb-4 text-green-700 dark:text-green-400">Consolidation & Status</CardTitle>
-                                
+
                                 {/* Row 1: 1/4 (Select), 2/4 (Input), 1/4 (Select) */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div className="space-y-2 col-span-1 flex flex-col"> {/* Use flex-col */}
@@ -1174,14 +1312,14 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                     </div>
                                     <div className="space-y-2 col-span-2 flex flex-col"> {/* Use flex-col */}
                                         <Label htmlFor="cellLeaderName" className="font-medium text-gray-700 dark:text-gray-300">Cell Leader Name</Label>
-                                        <Input 
-                                            id="cellLeaderName" 
-                                            name="cell_leader_name" 
-                                            value={editFormData.cell_leader_name || ""} 
-                                            onChange={handleEditChange} 
-                                            disabled={!editFormData.attending_cell_group} 
+                                        <Input
+                                            id="cellLeaderName"
+                                            name="cell_leader_name"
+                                            value={editFormData.cell_leader_name || ""}
+                                            onChange={handleEditChange}
+                                            disabled={!editFormData.attending_cell_group}
                                             // FIX: Dark mode styling for Input
-                                            className={`dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 ${!editFormData.attending_cell_group ? 'opacity-50' : ''}`} 
+                                            className={`dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 ${!editFormData.attending_cell_group ? 'opacity-50' : ''}`}
                                         />
                                     </div>
                                     <div className="space-y-2 col-span-1 flex flex-col"> {/* Use flex-col */}
@@ -1200,7 +1338,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                         </Select>
                                     </div>
                                 </div>
-                                
+
                                 {/* Row 2: 1/4 (Select), 1/4 (Select), 2/4 (Input) */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                                     <div className="space-y-2 flex flex-col"> {/* Use flex-col */}
@@ -1235,11 +1373,11 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                     </div>
                                     <div className="space-y-2 col-span-2 flex flex-col"> {/* Use flex-col */}
                                         <Label htmlFor="reason" className="font-medium text-gray-700 dark:text-gray-300">Reason for Inactivity/Other</Label>
-                                        <Input 
-                                            id="reason" 
-                                            name="reason" 
-                                            value={editFormData.reason || ""} 
-                                            onChange={handleEditChange} 
+                                        <Input
+                                            id="reason"
+                                            name="reason"
+                                            value={editFormData.reason || ""}
+                                            onChange={handleEditChange}
                                             // FIX: Dark mode styling for Input
                                             className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                                         />
@@ -1313,15 +1451,15 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                     </Tabs>
 
                     <DialogFooter className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-                        <Button 
-                            variant="outline" 
-                            onClick={() => setShowEditModal(false)} 
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowEditModal(false)}
                             className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 px-6"
                         >
                             Cancel
                         </Button>
-                        <Button 
-                            onClick={handleEditSubmit} 
+                        <Button
+                            onClick={handleEditSubmit}
                             disabled={isSubmitting}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl px-6 transition-transform transform hover:scale-[1.02] disabled:opacity-70"
                         >
