@@ -132,16 +132,38 @@ export async function getMembers(filters = {}) {
     query = query.eq('member_status', member_status);
   }
 
+  //changed to work with partial matches
   if (church_ministry && church_ministry !== 'all') {
-    query = query.eq('church_ministry', church_ministry);
+    query = query.ilike(
+      'church_ministry',
+      `%${church_ministry}%`
+    );
   }
 
-  if (spiritual_trainings && spiritual_trainings.length > 0) {
-    query = query.in('spiritual_trainings', spiritual_trainings);
+  // added birth_month filter
+  const { birth_month } = filters;
+
+  if (birth_month && birth_month !== 'all') {
+    query = query.eq('birth_month', Number(birth_month));
   }
 
-  if (typeof water_baptized === 'boolean') {
-    query = query.eq('water_baptized', water_baptized);
+  // fix on going
+if (spiritual_trainings && spiritual_trainings !== 'all') {
+  query = query.eq('spiritual_trainings.training_type', spiritual_trainings);
+}
+
+// changed to properly filter boolean
+  if (water_baptized !== undefined && water_baptized !== null) {
+    const filterValue =
+      water_baptized === 'true' || water_baptized === true
+        ? true
+        : water_baptized === 'false' || water_baptized === false
+          ? false
+          : undefined;
+
+    if (filterValue !== undefined) {
+      query = query.eq('water_baptized', filterValue);
+    }
   }
 
   if (date_from) {
@@ -162,27 +184,27 @@ export async function getMembers(filters = {}) {
 
   // Optionally format trainings and households as strings like your original SQL
   const formatted = data.map((member) => ({
-  ...member,
-  trainings: member.spiritual_trainings
-    .map(t => `${t.training_type} (${t.year})`)
-    .join(', '),
-  households: member.household_members
-    .map(h => {
-      let dobFormatted = h.date_of_birth;
-      if (dobFormatted) {
-        const dateObj = new Date(dobFormatted);
-        dobFormatted = dateObj.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-      }
-      return `${h.name} - ${h.relationship} (${dobFormatted})`;
-    })
-    .join('; '),
-}));
+    ...member,
+    trainings: member.spiritual_trainings
+      .map(t => `${t.training_type} (${t.year})`)
+      .join(', '),
+    households: member.household_members
+      .map(h => {
+        let dobFormatted = h.date_of_birth;
+        if (dobFormatted) {
+          const dateObj = new Date(dobFormatted);
+          dobFormatted = dateObj.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+        }
+        return `${h.name} - ${h.relationship} (${dobFormatted})`;
+      })
+      .join('; '),
+  }));
 
-return formatted;
+  return formatted;
 
 }
 

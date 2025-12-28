@@ -304,11 +304,11 @@ function formatDate(dateString, includeTime = false) {
 }
 
 //additional data for gender
-    const genders = [
-        { label: "Male", value: "M" },
-        { label: "Female", value: "F" },
-        { label: "Other", value: "O" },
-    ];
+const genders = [
+    { label: "Male", value: "M" },
+    { label: "Female", value: "F" },
+    { label: "Other", value: "O" },
+];
 
 // --- Edit Modal Component (EXTRACTED for performance fix) ---
 const EditModal = ({
@@ -741,7 +741,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     const [selectedStatus, setSelectedStatus] = useState("all");
     const [selectedMinistry, setSelectedMinistry] = useState("all");
     const [selectedTraining, setSelectedTraining] = useState("all");
-    //const [selectedBirthMonth, setSelectedBirthMonth] = useState("all"); 
+    //const [selectedBirthMonth, setSelectedBirthMonth] = useState("all");
     const [selectedWaterBaptized, setSelectedWaterBaptized] = useState("all");
     const [selectedMaritalStatus, setSelectedMaritalStatus] = useState("all");
     const [startDate, setStartDate] = useState("");
@@ -767,7 +767,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     const currentAttendanceRows = attendanceRecords.slice(startIndex, startIndex + rowsPerPage);
     const totalAttendancePages = Math.ceil(attendanceRecords.length / rowsPerPage);
 
-
+    const [selectedBirthMonth, setSelectedBirthMonth] = useState("all");
     const [selectedMember, setSelectedMember] = useState(null);
     const [editFormData, setEditFormData] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -790,9 +790,9 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                     search: searchTerm,
                     age_group: selectedAgeGroup,
                     member_status: selectedStatus,
-                    ministry: selectedMinistry,
-                    training: selectedTraining,
-                    //birth_month: selectedBirthMonth, 
+                    church_ministry: selectedMinistry,
+                    spiritual_trainings: selectedTraining ? [selectedTraining] : [],
+                    birth_month: selectedBirthMonth !== "all" ? selectedBirthMonth : undefined,
                     water_baptized: selectedWaterBaptized,
                     marital_status: selectedMaritalStatus,
                     date_from: startDate,
@@ -1017,27 +1017,27 @@ export const Reports = ({ isDark, onToggleTheme }) => {
 
     const handleEditSubmit = async () => {
         try {
-          if (!selectedMember) return toast.error("No member selected");
-    
-          const payload = {
-            ...editFormData,
-            church_ministry: Array.isArray(editFormData.church_ministry)
-              ? editFormData.church_ministry.join(", ")
-              : editFormData.church_ministry || null,
-            trainings: formatTrainings(editFormData.spiritual_trainings),
-          };
-    
-          await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
-          fetchMembers();
-    
-          toast.success("Member updated successfully!");
-          setShowEditModal(false);
-          setSelectedMember(null);
+            if (!selectedMember) return toast.error("No member selected");
+
+            const payload = {
+                ...editFormData,
+                church_ministry: Array.isArray(editFormData.church_ministry)
+                    ? editFormData.church_ministry.join(", ")
+                    : editFormData.church_ministry || null,
+                trainings: formatTrainings(editFormData.spiritual_trainings),
+            };
+
+            await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
+            fetchMembers();
+
+            toast.success("Member updated successfully!");
+            setShowEditModal(false);
+            setSelectedMember(null);
         } catch (error) {
-          console.error("Update failed:", error);
-          toast.error("Failed to update member. Please try again.");
+            console.error("Update failed:", error);
+            toast.error("Failed to update member. Please try again.");
         }
-      };
+    };
 
     // delete member
     const handleDelete = async (member_id) => {
@@ -1143,7 +1143,13 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                 member_status: selectedStatus,
                 date_from: startDate,
                 date_to: endDate,
+                birth_month: selectedBirthMonth !== 'all' ? Number(selectedBirthMonth) : undefined, // added birth_month filter
+                church_ministry: selectedMinistry !== 'all' ? selectedMinistry : undefined, //added ministry filter
+                water_baptized: selectedWaterBaptized !== 'all' ? (selectedWaterBaptized === 'true') : undefined, //added water baptized filter
+                marital_status: selectedMaritalStatus !== 'all' ? selectedMaritalStatus : undefined, //added marital status filter
+                spiritual_trainings: selectedTraining !== 'all' ? [selectedTraining] : undefined, // fix on going
             };
+
 
             const res = await axios.post(
                 "http://localhost:5000/api/export/members/export",
@@ -1198,7 +1204,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         }
     };
 
-    
+
 
     // --- Component for Member Records ---
     const MemberRecords = () => (
@@ -1253,8 +1259,8 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                         </SelectTrigger>
                         <SelectContent className="bg-white dark:bg-gray-800">
                             <SelectItem value="all" className="text-gray-900 dark:text-white">All Status</SelectItem>
-                            <SelectItem value="active" className="text-gray-900 dark:text-white">Active</SelectItem>
-                            <SelectItem value="inactive" className="text-gray-900 dark:text-white">Inactive</SelectItem>
+                            <SelectItem value="Active" className="text-gray-900 dark:text-white">Active</SelectItem> {/* capitatlized the first letter of the value */}
+                            <SelectItem value="Inactive" className="text-gray-900 dark:text-white">Inactive</SelectItem> {/* capitatlized the first letter of the value */}
                         </SelectContent>
                     </Select>
                 </div>
@@ -1295,7 +1301,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                 {/* 5. Birth Month Filter (NEW) */}
                 <div className="space-y-2">
                     <Label htmlFor="birthMonth" className="text-gray-700 dark:text-gray-300 font-medium">Birth Month</Label>
-                    {/*<Select value={selectedBirthMonth} onValueChange={setSelectedBirthMonth}> 
+                    <Select value={selectedBirthMonth} onValueChange={setSelectedBirthMonth}>
                         <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                             <SelectValue placeholder="Select Month" />
                         </SelectTrigger>
@@ -1307,7 +1313,6 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                             })}
                         </SelectContent>
                     </Select>
-                    */}
                 </div>
 
                 {/* 6. Water Baptized Filter (NEW) */}

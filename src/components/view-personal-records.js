@@ -312,15 +312,16 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                     search: searchTerm,
                     age_group: selectedAgeGroup,
                     member_status: selectedStatus,
-                    ministry: selectedMinistry,
-                    training: selectedTraining,
-                    birth_month: selectedBirthMonth,
+                    church_ministry: selectedMinistry,
+                    spiritual_trainings: selectedTraining !== "all" ? selectedTraining : undefined,
+                    birth_month: selectedBirthMonth !== "all" ? selectedBirthMonth : undefined,
                     water_baptized: selectedWaterBaptized,
                     marital_status: selectedMaritalStatus,
                     date_from: startDate,
                     date_to: endDate,
                 },
             });
+            console.log("Fetched members:", res.data);
             setMembers(res.data);
             setCurrentPage(1);
         } catch (err) {
@@ -399,27 +400,27 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
 
     const handleEditSubmit = async () => {
         try {
-          if (!selectedMember) return toast.error("No member selected");
-    
-          const payload = {
-            ...editFormData,
-            church_ministry: Array.isArray(editFormData.church_ministry)
-              ? editFormData.church_ministry.join(", ")
-              : editFormData.church_ministry || null,
-            trainings: formatTrainings(editFormData.spiritual_trainings),
-          };
-    
-          await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
-          fetchMembers();
-    
-          toast.success("Member updated successfully!");
-          setShowEditModal(false);
-          setSelectedMember(null);
+            if (!selectedMember) return toast.error("No member selected");
+
+            const payload = {
+                ...editFormData,
+                church_ministry: Array.isArray(editFormData.church_ministry)
+                    ? editFormData.church_ministry.join(", ")
+                    : editFormData.church_ministry || null,
+                trainings: formatTrainings(editFormData.spiritual_trainings),
+            };
+
+            await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
+            fetchMembers();
+
+            toast.success("Member updated successfully!");
+            setShowEditModal(false);
+            setSelectedMember(null);
         } catch (error) {
-          console.error("Update failed:", error);
-          toast.error("Failed to update member. Please try again.");
+            console.error("Update failed:", error);
+            toast.error("Failed to update member. Please try again.");
         }
-      };
+    };
 
     const handleDelete = async (member_id) => {
         const confirmed = window.confirm("Are you sure you want to delete this member?");
@@ -427,11 +428,16 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
 
         try {
             //changed API to axios
-            const res = await axios.delete(member_id);
+            const res = await axios.delete(`http://localhost:5000/api/members/${member_id}`);
+            fetchMembers();
             if (res.status !== 200) throw new Error("Failed to delete member");
 
+            // Remove deleted member from local state
             setMembers((prev) => prev.filter((m) => m.member_id !== member_id));
             toast.success("Member deleted successfully!");
+            if (currentMemberRows.length === 1 && currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+            }
 
         } catch (error) {
             console.error("Delete error:", error);
@@ -622,7 +628,13 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                 member_status: selectedStatus,
                 date_from: startDate,
                 date_to: endDate,
+                birth_month: selectedBirthMonth !== 'all' ? Number(selectedBirthMonth) : undefined,
+                church_ministry: selectedMinistry !== 'all' ? selectedMinistry : undefined,
+                water_baptized: selectedWaterBaptized !== 'all' ? (selectedWaterBaptized === 'true') : undefined,
+                marital_status: selectedMaritalStatus !== 'all' ? selectedMaritalStatus : undefined,
+                spiritual_trainings: selectedTraining !== 'all' ? [selectedTraining] : undefined, // optional for now
             };
+
 
             const res = await axios.post(
                 "http://localhost:5000/api/export/members/export",
@@ -733,8 +745,8 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                         </SelectTrigger>
                                         <SelectContent className="dark:bg-gray-800">
                                             <SelectItem value="all" className="text-gray-900 dark:text-white">All Status</SelectItem>
-                                            <SelectItem value="active" className="text-gray-900 dark:text-white">Active</SelectItem>
-                                            <SelectItem value="inactive" className="text-gray-900 dark:text-white">Inactive</SelectItem>
+                                            <SelectItem value="Active" className="text-gray-900 dark:text-white">Active</SelectItem>
+                                            <SelectItem value="Inactive" className="text-gray-900 dark:text-white">Inactive</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -767,6 +779,8 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+                                
                                 <div className="space-y-2">
                                     <Label htmlFor="birthMonth" className="text-gray-700 dark:text-gray-300 font-medium">Birth Month</Label>
                                     <Select value={selectedBirthMonth} onValueChange={setSelectedBirthMonth}>
@@ -782,6 +796,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                         </SelectContent>
                                     </Select>
                                 </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="waterBaptized" className="text-gray-700 dark:text-gray-300 font-medium">Water Baptized</Label>
                                     <Select value={selectedWaterBaptized} onValueChange={setSelectedWaterBaptized}>
