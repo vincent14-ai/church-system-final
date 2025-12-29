@@ -621,7 +621,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         setIsLoading(true);
         try {
             //change API back to axios
-            const res = await axios.get("/api/members", {
+            const res = await axios.get("http://localhost:5000/api/members", {
                 params: {
                     search: searchTerm,
                     age_group: selectedAgeGroup,
