@@ -1,4 +1,8 @@
-import supabase from "../config/db.js";
+import getSupabase from "../config/db.js";
+
+function supabase() {
+  return getSupabase();
+}
 
 // 🔹 Add a new member
 export async function addMember(memberData) {
@@ -11,7 +15,7 @@ export async function addMember(memberData) {
   } = memberData;
 
   // 1️⃣ Insert into member_data
-  const { data: member, error } = await supabase
+  const { data: member, error } = await supabase()
     .from("member_data")
     .insert([{
       photo_url, first_name, last_name, marital_status, date_of_birth, gender, contact_number, prev_church_attendee,
@@ -38,7 +42,7 @@ export async function addMember(memberData) {
       }));
 
     if (trainingsToInsert.length) {
-      const { error: tError } = await supabase.from("spiritual_trainings").insert(trainingsToInsert);
+      const { error: tError } = await supabase().from("spiritual_trainings").insert(trainingsToInsert);
       if (tError) throw tError;
     }
   }
@@ -52,7 +56,7 @@ export async function addMember(memberData) {
       date_of_birth: h.date_of_birth
     }));
 
-    const { error: hError } = await supabase.from("household_members").insert(householdsToInsert);
+    const { error: hError } = await supabase().from("household_members").insert(householdsToInsert);
     if (hError) throw hError;
   }
 
@@ -69,7 +73,7 @@ export async function getMembers(filters = {}) {
   } = filters;
 
   // Start query
-  let query = supabase
+  let query = supabase()
     .from('member_data')
     .select(`
       member_id,
@@ -210,7 +214,7 @@ if (spiritual_trainings && spiritual_trainings !== 'all') {
 
 // 🔹 Get member for attendance
 export async function getMembersForAttendance() {
-  const { data, error } = await supabase.from("member_data").select(`
+  const { data, error } = await supabase().from("member_data").select(`
     member_id, first_name, last_name, age_group, member_status
   `);
 
@@ -227,7 +231,7 @@ export async function getMembersForAttendance() {
 
 // 🔹 Get single member by ID
 export async function getMemberByIdService(member_id) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('member_data')
     .select(`
       member_id,
@@ -288,7 +292,7 @@ export async function getMemberByIdService(member_id) {
 // 🔹 Update member info
 export async function updateMemberService(member_id, updatedData) {
   // Update main member_data table
-  const { error: mError } = await supabase
+  const { error: mError } = await supabase()
     .from("member_data")
     .update({
       photo_url: updatedData.photo_url,
@@ -318,7 +322,7 @@ export async function updateMemberService(member_id, updatedData) {
   if (mError) throw mError;
 
   // Delete old trainings and insert new ones
-  await supabase.from("spiritual_trainings").delete().eq("member_id", member_id);
+  await supabase().from("spiritual_trainings").delete().eq("member_id", member_id);
 
   if (updatedData.spiritual_trainings) {
     const typeMap = { LifeClass: "Life Class", SOL1: "SOL 1", SOL2: "SOL 2", SOL3: "SOL 3" };
@@ -331,13 +335,13 @@ export async function updateMemberService(member_id, updatedData) {
       }));
 
     if (trainingsToInsert.length) {
-      const { error: tError } = await supabase.from("spiritual_trainings").insert(trainingsToInsert);
+      const { error: tError } = await supabase().from("spiritual_trainings").insert(trainingsToInsert);
       if (tError) throw tError;
     }
   }
 
   // Delete old households and insert new ones
-  await supabase.from("household_members").delete().eq("member_id", member_id);
+  await supabase().from("household_members").delete().eq("member_id", member_id);
 
   if (updatedData.household_members && updatedData.household_members.length) {
     const householdsToInsert = updatedData.household_members.map(h => ({
@@ -347,7 +351,7 @@ export async function updateMemberService(member_id, updatedData) {
       date_of_birth: h.date_of_birth
     }));
 
-    const { error: hError } = await supabase.from("household_members").insert(householdsToInsert);
+    const { error: hError } = await supabase().from("household_members").insert(householdsToInsert);
     if (hError) throw hError;
   }
 
@@ -356,9 +360,9 @@ export async function updateMemberService(member_id, updatedData) {
 
 // 🔹 Delete member
 export async function deleteMemberService(member_id) {
-  await supabase.from("spiritual_trainings").delete().eq("member_id", member_id);
-  await supabase.from("household_members").delete().eq("member_id", member_id);
-  const { error } = await supabase.from("member_data").delete().eq("member_id", member_id);
+  await supabase().from("spiritual_trainings").delete().eq("member_id", member_id);
+  await supabase().from("household_members").delete().eq("member_id", member_id);
+  const { error } = await supabase().from("member_data").delete().eq("member_id", member_id);
   if (error) throw error;
 
   return { success: true };

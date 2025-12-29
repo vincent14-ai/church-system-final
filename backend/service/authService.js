@@ -1,10 +1,14 @@
-import supabase from "../config/db.js"; // your Supabase client
+import getSupabase from "../config/db.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../config/jwt.js";
 
+function supabase() {
+  return getSupabase();
+}
+
 export async function loginUser(email, password) {
   // Fetch user by email
-  const { data: users, error } = await supabase
+  const { data: users, error } = await supabase()
     .from("users")
     .select("*")
     .eq("email", email)

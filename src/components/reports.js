@@ -621,7 +621,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         setIsLoading(true);
         try {
             //change API back to axios
-            const res = await axios.get("https://church-system-backend-40ca.onrender.com/api/members", {
+            const res = await axios.get("/api/members", {
                 params: {
                     search: searchTerm,
                     age_group: selectedAgeGroup,
@@ -678,7 +678,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         formData.append("file", file);
 
         try {
-            const response = await axios.post("https://church-system-backend-40ca.onrender.com/api/import", formData, {
+            const response = await axios.post("/api/import", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
@@ -720,7 +720,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
 
     const fetchFilteredAttendance = async () => {
         try {
-            const res = await axios.get("https://church-system-backend-40ca.onrender.com/api/attendance/filter", {
+            const res = await axios.get("/api/attendance/filter", {
                 params: {
                     search: attendanceSearchTerm,
                     ageGroup: "all",
@@ -821,7 +821,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     const handleEdit = async (member_id) => {
         try {
             console.log("Fetching member:", member_id);
-            const res = await axios.get(`https://church-system-backend-40ca.onrender.com/api/members/${member_id}`);
+            const res = await axios.get(`/api/members/${member_id}`);
             const member = res.data;
 
             // Map backend's 'trainings' to frontend's 'spiritual_trainings'
@@ -890,7 +890,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
             trainings: formatTrainings(editFormData.spiritual_trainings),
           };
     
-          await axios.put(`https://church-system-backend-40ca.onrender.com/api/members/${selectedMember}`, payload);
+          await axios.put(`/api/members/${selectedMember}`, payload);
           fetchMembers();
     
           toast.success("Member updated successfully!");
@@ -909,7 +909,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
 
         try {
             //changed API to axios
-            const res = await axios.delete(`https://church-system-backend-40ca.onrender.com/api/members/${member_id}`);
+            const res = await axios.delete(`/api/members/${member_id}`);
             fetchMembers();
             if (res.status !== 200) throw new Error("Failed to delete member");
 
@@ -1025,7 +1025,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
             };
 
             const res = await axios.post(
-                "https://church-system-backend-40ca.onrender.com/api/export/members/export",
+                "/api/export/members/export",
                 filters,
                 { responseType: "blob" }
             );
@@ -1056,7 +1056,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
             };
 
             const res = await axios.post(
-                "https://church-system-backend-40ca.onrender.com/api/export/attendance/export",
+                "/api/export/attendance/export",
                 filters,
                 { responseType: "blob" }
             );
