@@ -621,7 +621,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         setIsLoading(true);
         try {
             //change API back to axios
-            const res = await axios.get("http://localhost:5000/api/members", {
+            const res = await axios.get("${process.env.REACT_APP_API_URL}/api/members", {
                 params: {
                     search: searchTerm,
                     age_group: selectedAgeGroup,
@@ -678,7 +678,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         formData.append("file", file);
 
         try {
-            const response = await axios.post("http://localhost:5000/api/import", formData, {
+            const response = await axios.post("${process.env.REACT_APP_API_URL}/api/import", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
@@ -720,7 +720,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
 
     const fetchFilteredAttendance = async () => {
         try {
-            const res = await axios.get("http://localhost:5000/api/attendance/filter", {
+            const res = await axios.get("${process.env.REACT_APP_API_URL}/api/attendance/filter", {
                 params: {
                     search: attendanceSearchTerm,
                     ageGroup: "all",
@@ -821,7 +821,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     const handleEdit = async (member_id) => {
         try {
             console.log("Fetching member:", member_id);
-            const res = await axios.get(`http://localhost:5000/api/members/${member_id}`);
+            const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/members/${member_id}`);
             const member = res.data;
 
             // Map backend's 'trainings' to frontend's 'spiritual_trainings'
@@ -890,7 +890,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
             trainings: formatTrainings(editFormData.spiritual_trainings),
           };
     
-          await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
+          await axios.put(`${process.env.REACT_APP_API_URL}/api/members/${selectedMember}`, payload);
           fetchMembers();
     
           toast.success("Member updated successfully!");
@@ -909,7 +909,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
 
         try {
             //changed API to axios
-            const res = await axios.delete(`http://localhost:5000/api/members/${member_id}`);
+            const res = await axios.delete(`${process.env.REACT_APP_API_URL}/api/members/${member_id}`);
             fetchMembers();
             if (res.status !== 200) throw new Error("Failed to delete member");
 
@@ -1025,7 +1025,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
             };
 
             const res = await axios.post(
-                "http://localhost:5000/api/export/members/export",
+                "${process.env.REACT_APP_API_URL}/api/export/members/export",
                 filters,
                 { responseType: "blob" }
             );
@@ -1056,7 +1056,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
             };
 
             const res = await axios.post(
-                "http://localhost:5000/api/export/attendance/export",
+                "${process.env.REACT_APP_API_URL}/api/export/attendance/export",
                 filters,
                 { responseType: "blob" }
             );

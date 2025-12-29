@@ -14,7 +14,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // your React app origin
+    origin: process.env.FRONTEND_URL, // your React app origin
     credentials: true, // allow cookies and auth headers
   })
 );
