@@ -62,7 +62,8 @@ export function Login({ isDark, onToggleTheme }) {
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
-              className="mx-auto w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg"
+             // w-24 h-24 (96px)
+             className="mx-auto w-24 h-24 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg"
             >
               <img
                 src={isDark ? ChurchLogoWhite : ChurchLogoBlue} 
@@ -104,36 +105,37 @@ export function Login({ isDark, onToggleTheme }) {
                 </div>
 
                 <div className="space-y-2">
-                  {/* Reset Label to inherit the Card's text color */}
-                  <Label htmlFor="password" className="text-sm font-medium text-black-800 dark:text-white">
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 h-12 bg-input-background"
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4 text-inherit" />
-                      ) : (
-                        <Eye className="w-4 h-4 text-inherit" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
+  <Label htmlFor="password" className="text-sm font-medium text-black-800 dark:text-white">
+    Password
+  </Label>
+  <div className="relative">
+    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+    <Input
+      id="password"
+      type={showPassword ? "text" : "password"}
+      placeholder="Enter your password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      /* Added pr-12 to prevent text from overlapping your custom button */
+      className="pl-10 pr-12 h-12 bg-input-background hide-password-toggle"
+      required
+    />
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      /* Higher z-index to stay on top */
+      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 z-10 hover:bg-transparent"
+      onClick={() => setShowPassword(!showPassword)}
+    >
+      {showPassword ? (
+        <EyeOff className="w-4 h-4 text-muted-foreground" />
+      ) : (
+        <Eye className="w-4 h-4 text-muted-foreground" />
+      )}
+    </Button>
+  </div>
+</div>
               </div>
 
               {error && (

@@ -280,7 +280,7 @@ export default function App() {
               // The 'items-center' class handles the horizontal centering of children
               className="flex flex-col items-center gap-2 mb-8 p-4 border-b border-gray-200 dark:border-gray-800"
             >
-              <img src={churchLogo} alt="Church Logo" className="w-16 h-16 object-contain" />
+              <img src={churchLogo} alt="Church Logo" className="w-full h-auto object-contain" />
 
               {/* The H1 tag is now correctly centered by the parent's items-center class */}
               <h1 className="text-sm text-gray-500 dark:text-gray-400 text-center">

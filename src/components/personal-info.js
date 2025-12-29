@@ -7,6 +7,8 @@ import {
 import { supabase } from "../lib/supabaseClient.js";
 import axios from 'axios';
 import PhotoUpload from "./photo";
+import ChurchLogoBlue from './assets/LOGO BLUE.png';
+import ChurchLogoWhite from './assets/LOGO WHITE.png';
 
 // --- UI COMPONENTS (Internal Implementation) ---
 
@@ -219,21 +221,16 @@ const Toast = ({ message, type, onClose }) => {
 
 // --- MAIN COMPONENT ---
 
-export function PersonalInfo() {
-  const [isDark, setIsDark] = useState(true);
+export function PersonalInfo({ isDark, setIsDark, onToggleTheme }) {
+  const churchLogo = isDark ? ChurchLogoWhite : ChurchLogoBlue;
+  
   const [showCamera, setShowCamera] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const toggleTheme = () => setIsDark(!isDark);
+const toggleTheme = () => setIsDark(!isDark);
 
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDark]);
+ 
 
   const [data, setData] = useState({
     photo_url: "",
@@ -303,9 +300,9 @@ export function PersonalInfo() {
 
     if (age < 13) return 'Children';
     if (age >= 13 && age <= 17) return 'Youth';
-    if (age >= 18 && age <= 39) return status === 'Married' ? 'Young Married' : 'Young Adult';
-    if (age >= 40 && age <= 59) return 'Middle Adult';
-    return 'Senior Adult';
+    if (age >= 18 && age <= 59) return 'Young Adult';
+    // if (age >= 40 && age <= 59) return 'Middle Adult';
+    return 'Senior ';
   };
 
   useEffect(() => {
@@ -417,23 +414,35 @@ export function PersonalInfo() {
         <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[100px] transition-all duration-700" />
       </div>
 
-      {/* Navbar */}
-      <nav className="sticky top-0 z-40 border-b border-white/10 bg-white/70 dark:bg-slate-950/70 backdrop-blur-lg transition-all duration-500">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 transition-transform duration-500 hover:scale-105">
-              <Users className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent transition-all duration-500">
-              Personal Information
-            </h1>
-          </div>
-          <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-300">
-            {isDark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
-          </button>
-        </div>
-      </nav>
+      {/* Navbar - Sagad sa Gilid Version */}
+<nav className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-sm transition-all duration-500">
+  {/* Changed max-w-5xl to w-full and added px-4 to px-8 for a tiny bit of breathing room from the screen edge */}
+  <div className="w-full px-4 md:px-8 py-4 flex items-center justify-between">
+    
+    {/* Left Side: Logo & Text */}
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md transition-transform duration-500 hover:scale-105">
+        <Users className="w-5 h-5 text-white" />
+      </div>
+      <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+        Personal Information
+      </h1>
+    </div>
 
+    {/* Right Side: Toggle Button */}
+    <button 
+      onClick={onToggleTheme} 
+      className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-300 ring-1 ring-slate-200 dark:ring-slate-700 shadow-sm active:scale-90"
+    >
+      {isDark ? (
+        <Moon className="w-5 h-5 text-indigo-400" /> 
+      ) : (
+        <Sun className="w-5 h-5 text-amber-500" />
+      )}
+    </button>
+    
+  </div>
+</nav>
       <main className="relative z-10 max-w-5xl mx-auto p-6 pb-24">
         <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 

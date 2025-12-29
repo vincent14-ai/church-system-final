@@ -114,7 +114,7 @@ export function Attendance({ isDark, onToggleTheme }) {
   
       const now = new Date();
       const today1pm = new Date();
-      today1pm.setHours(17, 32, 0, 0); // Set to 1:00 PM today
+      today1pm.setHours(10, 30, 0, 0); // Set to 1:00 PM today
   
       if (now >= today1pm) {
         // If it's already past 1pm, apply absents immediately
@@ -304,14 +304,15 @@ export function Attendance({ isDark, onToggleTheme }) {
                       id="date"
                       type="date"
                       value={selectedDate}
+                      disabled
                       onChange={(e) => setSelectedDate(e.target.value)}
                       // Inline style to influence the native icon/control color scheme
                       style={isDark ? { colorScheme: 'dark' } : {}}
                       className={`
                         h-11 shadow-sm border-indigo-700/50 focus-visible:ring-primary transition-colors
                         ${isDark 
-                            ? 'bg-gray-700/70 text-white' // Dark Mode: dark background, WHITE text (and hopefully icon)
-                            : 'bg-white text-gray-900'    // Light Mode
+                            ? 'bg-[#1e143d] text-indigo-100 font-medium' // Mas malalim na purple para sa readability
+                            : 'bg-gray-50 text-gray-900 font-medium'
                         }
                       `}
                     />
@@ -416,12 +417,14 @@ export function Attendance({ isDark, onToggleTheme }) {
                                 <Button
                                   variant={status === 'present' ? 'default' : 'outline'}
                                   size="sm"
+                                  disabled={status === 'absent'}
                                   onClick={() => markAttendance(member.id, 'present')}
                                   className={`
                                     h-9 transition-all duration-300
                                     ${status === 'present' 
                                       ? 'bg-green-500 hover:bg-green-600 text-white shadow-md' 
                                       : 'border-green-500 text-green-500 hover:bg-green-500/10'}
+                                      ${status === 'absent' ? 'opacity-50 cursor-not-allowed border-gray-400 text-gray-400' : ''}
                                   `}
                                 >
                                   <UserCheck className="w-4 h-4 mr-1" />

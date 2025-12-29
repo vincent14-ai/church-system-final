@@ -40,3 +40,4 @@ export async function readFilteredAttendance(req, res) {
     res.status(500).json({ error: "Failed to fetch filtered attendance" });
   }
 }
+

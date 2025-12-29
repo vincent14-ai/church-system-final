@@ -34,11 +34,18 @@ const Input = ({ className = '', ...props }) => (
 // Theme Toggle Component (Kept for local definition)
 const ThemeToggle = ({ isDark, onToggle }) => (
   <button
-    onClick={onToggle}
-    className={`p-2 rounded-full transition-colors duration-200 ${isDark ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' : 'bg-gray-200 text-violet-600 hover:bg-gray-300'
-      }`}
+    // 1. Idinagdag ang 'e' (event) para makuha ang coordinates ng click
+    onClick={(e) => onToggle(e)} 
+    className={`p-2 rounded-full transition-all duration-300 relative z-[60] ${
+      isDark 
+        ? 'bg-[#180C34] text-violet-400 border border-violet-900/50 shadow-lg shadow-violet-950/50' 
+        : 'bg-white text-yellow-600 border border-gray-200 shadow-md hover:shadow-lg'
+    }`}
   >
-    {isDark ? <Sun size={20} /> : <Moon size={20} />}
+    {/* 2. Nagdagdag ng z-index para manatiling litaw ang icon habang lumalaki ang circle */}
+    <div className="relative z-[61]">
+      {isDark ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+    </div>
   </button>
 );
 

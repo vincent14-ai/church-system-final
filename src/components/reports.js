@@ -18,206 +18,13 @@ import { Textarea } from './ui/textarea';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { Checkbox } from './ui/checkbox';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "./ui/dropdown-menu";
-import { Users, Download, Search, Filter, Plus, Trash2, User, Loader2, X, Edit2, ChevronLeft, ChevronRight, Hash, Calendar, Heart, Home, BookOpen, CheckCircle, ListChecks, Sun, Moon } from 'lucide-react';
+import { Users, Download, Search, Filter, Plus, Trash2, User, Loader2, X, Edit2, ChevronLeft, ChevronRight, Hash, Calendar, Heart, Home, BookOpen, CheckCircle, ListChecks, Sun, Moon, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from "sonner";
 //import axios
 import axios from 'axios';
 
-/* Remove mock data
-// --- Hardcoded Data for Initial State ---
-const HARDCODED_MEMBERS = [
-    {
-        member_id: 101,
-        photo_url: null,
-        first_name: 'Nheil',
-        last_name: 'Reyes',
-        marital_status: 'Single',
-        date_of_birth: '2002-12-09T00:00:00.000Z',
-        gender: 'Male',
-        contact_number: '09171234567',
-        prev_church_attendee: true,
-        prev_church: 'JPCC Balayan',
-        address: 'Alangilan, Batangas City',
-        age_group: 'Youth',
-        trainings: 'Life Class (2020), SOL 1 (2022)',
-        willing_training: false,
-        households: 'Jane Reyes - Mother (1975-01-15); John Reyes - Father (1970-03-20)',
-        invited_by: 'Pastor Dan',
-        date_attended: '2019-10-10T00:00:00.000Z',
-        attending_cell_group: true,
-        cell_leader_name: 'JC Malabanan',
-        church_ministry: 'Media, Visuals',
-        consolidation: 'Yes',
-        reason: 'N/A',
-        water_baptized: true,
-        member_status: 'Active',
-    },
-    {
-        member_id: 102,
-        photo_url: null,
-        first_name: 'Vicente',
-        last_name: 'Lopez',
-        marital_status: 'Single',
-        date_of_birth: '2001-01-20T00:00:00.000Z',
-        gender: 'Male',
-        contact_number: '09209876543',
-        prev_church_attendee: false,
-        prev_church: null,
-        address: '456 Elm Ave, Quezon City',
-        age_group: 'Youth',
-        trainings: 'Life Class (2024)',
-        willing_training: true,
-        households: null,
-        invited_by: null,
-        date_attended: '2024-03-01T00:00:00.000Z',
-        attending_cell_group: true,
-        cell_leader_name: 'JC Malabanan',
-        church_ministry: 'Praise Team, Content Writer',
-        consolidation: 'Yes',
-        reason: 'N/A',
-        water_baptized: false,
-        member_status: 'Active',
-    },
-    {
-        member_id: 103,
-        photo_url: 'https://images.unsplash.com/photo-1555952517-2e8e729e0b44?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGF2YXRhcnxlbnwwfHwwfHx8MA%3D%3D',
-        first_name: 'Jayvee',
-        last_name: 'Pesino',
-        marital_status: 'Married',
-        date_of_birth: '2000-11-10T00:00:00.000Z',
-        gender: 'Male',
-        contact_number: '09985551234',
-        prev_church_attendee: true,
-        prev_church: 'JPCC Balayan',
-        address: '789 Oak Lane, Makati City',
-        age_group: 'Young Adult',
-        trainings: 'SOL 1 (2015), SOL 2 (2016), SOL 3 (2017)',
-        willing_training: false,
-        households: 'May Pesino - Spouse (2000-05-01)',
-        invited_by: null,
-        date_attended: '2014-05-25T00:00:00.000Z',
-        attending_cell_group: false,
-        cell_leader_name: null,
-        church_ministry: null,
-        consolidation: 'No',
-        reason: 'Moved to another city',
-        water_baptized: true,
-        member_status: 'Inactive',
-    },
-   
-];
 
-const HARDCODED_ATTENDANCE = [
-    { attendance_id: 1, member_id: 101, member_name: "Nheil Reyes", date: "2025-11-17T00:00:00.000Z", status: "Present" },
-    { attendance_id: 2, member_id: 102, member_name: "Vicente Lopez", date: "2025-11-17T00:00:00.000Z", status: "Present" },
-    { attendance_id: 3, member_id: 103, member_name: "Jayvee Pesino", date: "2025-11-17T00:00:00.000Z", status: "Absent" },
-]
-// --- End Hardcoded Data ---
-
-// --- Mock API Setup for Client-Side Simulation ---
-const MOCK_API = {
-    members: [...HARDCODED_MEMBERS],
-    attendance: [...HARDCODED_ATTENDANCE],
-    get: function(url, config) {
-        let filtered = this.members;
-        const { search, age_group, member_status, ministry, training, birth_month, water_baptized, marital_status } = config.params;
-
-        // Simulate Searching
-        if (search) {
-            const lowerSearch = search.toLowerCase();
-            filtered = filtered.filter(m =>
-                m.first_name.toLowerCase().includes(lowerSearch) ||
-                m.last_name.toLowerCase().includes(lowerSearch)
-            );
-        }
-
-        // Simulate Filtering
-        if (age_group && age_group !== 'all') {
-            filtered = filtered.filter(m => m.age_group === age_group);
-        }
-        if (member_status && member_status !== 'all') {
-            const statusMap = { 'active': 'Active', 'inactive': 'Inactive' };
-            filtered = filtered.filter(m => m.member_status === statusMap[member_status]);
-        }
-
-        // NEW: Ministry Filter (Checks if the member's ministry string includes the selected ministry)
-        if (ministry && ministry !== 'all') {
-            const lowerMinistry = ministry.toLowerCase();
-            filtered = filtered.filter(m => m.church_ministry && m.church_ministry.toLowerCase().includes(lowerMinistry));
-        }
-
-        // NEW: Spiritual Training Filter (Checks if the member's training string includes the selected training)
-        if (training && training !== 'all') {
-            const lowerTraining = training.toLowerCase();
-            filtered = filtered.filter(m => m.trainings && m.trainings.toLowerCase().includes(lowerTraining));
-        }
-
-        // NEW: Birth Month Filter
-        if (birth_month && birth_month !== 'all') {
-            filtered = filtered.filter(m => {
-                if (!m.date_of_birth) return false;
-                // date_of_birth is 'YYYY-MM-DD...' so month is at index 5 and 6 (e.g., '12' for December)
-                const memberMonth = new Date(m.date_of_birth).getMonth() + 1; // getMonth() is 0-indexed
-                return memberMonth.toString() === birth_month;
-            });
-        }
-
-        // NEW: Water Baptized Filter
-        if (water_baptized && water_baptized !== 'all') {
-            const isBaptized = water_baptized === 'true';
-            filtered = filtered.filter(m => !!m.water_baptized === isBaptized);
-        }
-
-        // NEW: Marital Status Filter
-        if (marital_status && marital_status !== 'all') {
-            filtered = filtered.filter(m => m.marital_status === marital_status);
-        }
-
-        return Promise.resolve({ data: filtered });
-    },
-    getById: function(id) {
-        const member = this.members.find(m => m.member_id === id);
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (member) {
-                    resolve({ data: member });
-                } else {
-                    reject({ response: { status: 404 } });
-                }
-            }, 300);
-        });
-    },
-    put: function(id, data) {
-        const index = this.members.findIndex(m => m.member_id === id);
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (index !== -1) {
-                    this.members[index] = { ...this.members[index], ...data };
-                    resolve({ data: this.members[index] });
-                } else {
-                    reject({ response: { status: 404 } });
-                }
-            }, 500);
-        });
-    },
-    delete: function(id) {
-        const initialLength = this.members.length;
-        this.members = this.members.filter(m => m.member_id !== id);
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (this.members.length < initialLength) {
-                    resolve({ status: 200 });
-                } else {
-                    reject({ response: { status: 404 } });
-                }
-            }, 500);
-        });
-    }
-};
-// --- End Mock API Setup ---
-
-*/
 /**
  * Utility functions for data parsing and formatting.
  */
@@ -302,6 +109,12 @@ function formatDate(dateString, includeTime = false) {
         return dateString;
     }
 }
+
+//additional data for gender
+    const genders = [
+        { label: "Male", value: "M" },
+        { label: "Female", value: "F" },
+    ];
 
 // --- Edit Modal Component (EXTRACTED for performance fix) ---
 const EditModal = ({
@@ -389,7 +202,7 @@ const EditModal = ({
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="date_of_birth" className="text-gray-700 dark:text-gray-300">Date of Birth</Label>
-                                    <Input id="date_of_birth" name="date_of_birth" type="date" value={editFormData.date_of_birth || ""} onChange={handleEditChange} className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
+                                    <Input id="date_of_birth" name="date_of_birth" type="date" value={editFormData.date_of_birth || ""} onChange={handleEditChange} className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white dark:[color-scheme:dark]" />
                                 </div>
 
                                 {/* Marital Status Dropdown FIX */}
@@ -398,7 +211,7 @@ const EditModal = ({
                                     <Select value={editFormData.marital_status || ""} onValueChange={(val) => handleSelectChange('marital_status', val)}>
                                         <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"><SelectValue placeholder="Select Status" /></SelectTrigger>
                                         <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"> {/* FIX: Light mode background */}
-                                            {['Single', 'Married', 'Divorced', 'Widowed'].map(s =>
+                                            {['Single', 'Married', 'Couples', 'Widowed/Widower'].map(s =>
                                                 <SelectItem key={s} value={s} className="text-gray-900 dark:text-white">
                                                     {s}
                                                 </SelectItem>
@@ -410,14 +223,33 @@ const EditModal = ({
                                 {/* Gender Dropdown FIX */}
                                 <div className="space-y-2">
                                     <Label htmlFor="gender" className="text-gray-700 dark:text-gray-300">Gender</Label>
+                                    {/*changed to work with backend
                                     <Select value={editFormData.gender || ""} onValueChange={(val) => handleSelectChange('gender', val)}>
                                         <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"><SelectValue placeholder="Select Gender" /></SelectTrigger>
-                                        <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"> {/* FIX: Light mode background */}
+                                        <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"> {/* FIX: Light mode background 
                                             {['Male', 'Female', 'Other'].map(g =>
                                                 <SelectItem key={g} value={g} className="text-gray-900 dark:text-white">
                                                     {g}
                                                 </SelectItem>
                                             )}
+                                        </SelectContent>
+                                    </Select>*/}
+                                    <Select
+                                        value={editFormData.gender || ""}
+                                        onValueChange={(val) =>
+                                            handleSelectChange("gender", val)
+                                        }
+                                    >
+                                        <SelectTrigger className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
+                                            <SelectValue placeholder="Select Gender" />
+                                        </SelectTrigger>
+
+                                        <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                            {genders.map(({ label, value }) => (
+                                                <SelectItem key={value} value={value}>
+                                                    {label}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -479,7 +311,7 @@ const EditModal = ({
                                                         type="date"
                                                         value={member.date_of_birth || ""}
                                                         onChange={(e) => handleHouseholdMemberChange(member.id, 'date_of_birth', e.target.value)}
-                                                        className="bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white"
+                                                        className="bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white dark:[color-scheme:dark]"
                                                     />
                                                 </div>
                                             </div>
@@ -510,7 +342,7 @@ const EditModal = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="date_attended" className="text-gray-700 dark:text-gray-300">First Date Attended</Label>
-                                    <Input id="date_attended" name="date_attended" type="date" value={editFormData.date_attended || ""} onChange={handleEditChange} className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
+                                    <Input id="date_attended" name="date_attended" type="month" value={editFormData.date_attended || ""} onChange={handleEditChange} className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white dark:[color-scheme:dark]" /> {/*changed date to month*/}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="invited_by" className="text-gray-700 dark:text-gray-300">Invited By (Full Name)</Label>
@@ -565,9 +397,19 @@ const EditModal = ({
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="cell_leader_name" className="text-gray-700 dark:text-gray-300">Cell Leader Name</Label>
-                                    <Input id="cell_leader_name" name="cell_leader_name" value={editFormData.cell_leader_name || ""} onChange={handleEditChange} disabled={!editFormData.attending_cell_group} className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white disabled:opacity-50" />
-                                </div>
+    <Label htmlFor="cell_leader_name" className="text-gray-700 dark:text-gray-300">
+        Cell Leader Name
+    </Label>
+    <Input 
+        id="cell_leader_name" 
+        name="cell_leader_name" 
+        // Ensure this fallback || "" is present to prevent 'uncontrolled' input warnings
+        value={editFormData.cell_leader_name || ""} 
+        onChange={handleEditChange} 
+        disabled={!editFormData.attending_cell_group} 
+        className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white disabled:opacity-50" 
+    />
+</div>
                                 <div className="space-y-2">
                                     <Label htmlFor="member_status" className="text-gray-700 dark:text-gray-300">Member Status</Label>
                                     <Select value={editFormData.member_status || ""} onValueChange={(val) => handleSelectChange('member_status', val)}>
@@ -603,7 +445,7 @@ const EditModal = ({
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="reason" className="text-gray-700 dark:text-gray-300">Reason for Inactivity/Other</Label>
+                                    <Label htmlFor="reason" className="text-gray-700 dark:text-gray-300">Reason(Optional)</Label>
                                     <Input id="reason" name="reason" value={editFormData.reason || ""} onChange={handleEditChange} className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
                                 </div>
                             </div>
@@ -648,8 +490,8 @@ const EditModal = ({
                                 >
                                     <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"><SelectValue /></SelectTrigger>
                                     <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"> {/* FIX: Light mode background */}
-                                        <SelectItem value="true" className="text-gray-900 dark:text-white">Yes, I am willing</SelectItem>
-                                        <SelectItem value="false" className="text-gray-900 dark:text-white">No, not at this time</SelectItem>
+                                        <SelectItem value="true" className="text-gray-900 dark:text-white">Yes</SelectItem>
+                                        <SelectItem value="false" className="text-gray-900 dark:text-white">No</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -673,6 +515,24 @@ const EditModal = ({
                                     </div>
                                 ))}
                             </div>
+
+                             {/* SHOW INPUT IF "Others" IS SELECTED */}
+                                {editFormData.church_ministry?.includes("Others") && (
+                                    <div className="mt-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <Label htmlFor="otherMinistryDetails" className="text-sm font-semibold text-yellow-700 dark:text-orange-400">
+                                            Specify Ministry Details
+                                        </Label>
+                                        <Input
+                                            id="otherMinistryDetails"
+                                            name="other_ministry_details"
+                                            placeholder="Type ministry name..."
+                                            value={editFormData.other_ministry_details || ""}
+                                            onChange={handleEditChange}
+                                            className="flex w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2.5 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 transition-all duration-300 dark:text-gray-200"
+                                        />
+                                    </div>
+                                )}
+                            
                         </Card>
 
                     </TabsContent>
@@ -715,7 +575,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     const [selectedStatus, setSelectedStatus] = useState("all");
     const [selectedMinistry, setSelectedMinistry] = useState("all");
     const [selectedTraining, setSelectedTraining] = useState("all");
-    //const [selectedBirthMonth, setSelectedBirthMonth] = useState("all"); 
+    const [selectedBirthMonth, setSelectedBirthMonth] = useState("all"); 
     const [selectedWaterBaptized, setSelectedWaterBaptized] = useState("all");
     const [selectedMaritalStatus, setSelectedMaritalStatus] = useState("all");
     const [startDate, setStartDate] = useState("");
@@ -741,7 +601,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     const currentAttendanceRows = attendanceRecords.slice(startIndex, startIndex + rowsPerPage);
     const totalAttendancePages = Math.ceil(attendanceRecords.length / rowsPerPage);
 
-
+    
     const [selectedMember, setSelectedMember] = useState(null);
     const [editFormData, setEditFormData] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -751,6 +611,8 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     const trainings = ["Life Class", "SOL 1", "SOL 2", "SOL 3"];
 
     const fileInputRef = useRef(null);
+
+    
 
     //const API = MOCK_API; 
 
@@ -764,11 +626,12 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                     search: searchTerm,
                     age_group: selectedAgeGroup,
                     member_status: selectedStatus,
-                    ministry: selectedMinistry,
-                    training: selectedTraining,
-                    //birth_month: selectedBirthMonth, 
+                    church_ministry: selectedMinistry,
+                    spiritual_trainings: selectedTraining ? [selectedTraining] : [],
+                    birth_month: selectedBirthMonth !== "all" ? selectedBirthMonth : undefined,
                     water_baptized: selectedWaterBaptized,
                     marital_status: selectedMaritalStatus,
+
                     date_from: startDate,
                     date_to: endDate,
                 },
@@ -899,7 +762,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         setSelectedStatus("all");
         setSelectedMinistry("all");
         setSelectedTraining("all");
-        //setSelectedBirthMonth("all"); 
+        setSelectedBirthMonth("all"); 
         setSelectedWaterBaptized("all");
         setSelectedMaritalStatus("all");
         setStartDate("");
@@ -930,39 +793,50 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         }
     };
 
-    // Attendance Status Badge
-    const getAttendanceBadge = (status) => {
-        switch (status) {
-            case 'Present':
-                return <Badge variant="default" className="bg-teal-500 hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600 text-white">Present</Badge>;
-            case 'Absent':
-                return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-800 dark:hover:bg-yellow-700 text-white">Absent</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
-    };
+   const getAttendanceBadge = (status) => {
+    // Ginagawa nating lowercase ang status para laging match sa switch case
+    const currentStatus = status?.toLowerCase();
+
+    switch (currentStatus) {
+        case 'present':
+            return (
+                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-none px-3">
+                    Present
+                </Badge>
+            );
+        case 'absent':
+            return (
+                <Badge className="bg-rose-500 hover:bg-rose-600 text-white border-none px-3">
+                    Absent
+                </Badge>
+            );
+        default:
+            return <Badge variant="outline" className="capitalize">{status}</Badge>;
+    }
+};
 
 
     // --- Modal Logic ---
+    // edit member
     const handleEdit = async (member_id) => {
-        setIsLoading(true);
         try {
-            //change API back to axios
-            const res = await axios.getById(member_id);
+            console.log("Fetching member:", member_id);
+            const res = await axios.get(`http://localhost:5000/api/members/${member_id}`);
             const member = res.data;
 
-            if (!member) throw new Error("Member not found");
-
+            // Map backend's 'trainings' to frontend's 'spiritual_trainings'
             const parsedTrainings = parseTrainings(member.trainings);
-            const parsedHouseholds = parseHouseholds(member.households);
 
             setEditFormData({
                 ...member,
-                date_of_birth: member.date_of_birth ? new Date(member.date_of_birth).toISOString().split('T')[0] : "",
-                date_attended: member.date_attended ? new Date(member.date_attended).toISOString().split('T')[0] : "",
                 church_ministry: parseChurchMinistry(member.church_ministry),
+                spiritual_trainings: parsedTrainings, // 👈 this ensures it's defined
+                household_members: parseHouseholds(member.households),
+            });
+
+            console.log("🎯 editFormData after mapping:", {
+                ...member,
                 spiritual_trainings: parsedTrainings,
-                household_members: parsedHouseholds,
             });
 
             setSelectedMember(member_id);
@@ -970,11 +844,8 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         } catch (error) {
             console.error("Failed to fetch member for edit:", error);
             toast.error("Unable to load member details");
-        } finally {
-            setIsLoading(false);
         }
     };
-
     const handleEditChange = (e) => {
         const { name, value, type } = e.target;
         if (type !== 'checkbox') {
@@ -987,80 +858,91 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     };
 
     const handleBooleanToggle = (name, value) => {
-        const boolValue = value === 'true';
-        setEditFormData((prev) => ({ ...prev, [name]: boolValue }));
-    };
+    const boolValue = value === 'true';
+
+    setEditFormData((prev) => {
+        // Create a copy of the previous state with the new toggle value
+        const updatedState = { ...prev, [name]: boolValue };
+
+        // 1. Logic for Previous Church
+        if (name === 'prev_church_attendee' && !boolValue) {
+            updatedState.prev_church = ""; 
+        }
+
+        // 2. Logic for Cell Group
+        if (name === 'attending_cell_group' && !boolValue) {
+            updatedState.cell_leader_name = "";
+        }
+
+        return updatedState;
+    });
+};
 
     const handleEditSubmit = async () => {
-        setIsSubmitting(true);
         try {
-            if (!selectedMember) return toast.error("No member selected");
-
-            const payload = {
-                ...editFormData,
-                church_ministry: Array.isArray(editFormData.church_ministry)
-                    ? editFormData.church_ministry.join(", ")
-                    : editFormData.church_ministry || null,
-                trainings: formatTrainings(editFormData.spiritual_trainings),
-                households: formatHouseholds(editFormData.household_members),
-
-                prev_church_attendee: !!editFormData.prev_church_attendee,
-                willing_training: !!editFormData.willing_training,
-                attending_cell_group: !!editFormData.attending_cell_group,
-                water_baptized: !!editFormData.water_baptized,
-            };
-
-            delete payload.spiritual_trainings;
-            delete payload.household_members;
-
-            //change API back to axios
-            await axios.put(selectedMember, payload);
-
-            await fetchMembers();
-
-            toast.success("Member updated successfully!");
-            setShowEditModal(false);
-            setSelectedMember(null);
-        } catch (error) {
-            console.error("Update failed:", error);
-            toast.error("Failed to update member. Please try again.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // delete member
-      const handleDelete = async (member_id) => {
-        const confirmed = window.confirm("Are you sure you want to delete this member?");
-        if (!confirmed) return;
+          if (!selectedMember) return toast.error("No member selected");
     
-        try {
-            //changed API to axios
-          const res = await axios.delete(`http://localhost:5000/api/members/${member_id}`);
+          const payload = {
+            ...editFormData,
+            church_ministry: Array.isArray(editFormData.church_ministry)
+              ? editFormData.church_ministry.join(", ")
+              : editFormData.church_ministry || null,
+            trainings: formatTrainings(editFormData.spiritual_trainings),
+          };
+    
+          await axios.put(`http://localhost:5000/api/members/${selectedMember}`, payload);
           fetchMembers();
-          if (res.status !== 200) throw new Error("Failed to delete member");
     
-          // Remove deleted member from local state
-          setMembers((prev) => prev.filter((m) => m.member_id !== member_id));
-          toast.success("Member deleted successfully!");
-          if (currentMemberRows.length === 1 && currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-          }
-    
+          toast.success("Member updated successfully!");
+          setShowEditModal(false);
+          setSelectedMember(null);
         } catch (error) {
-          console.error("Delete error:", error);
-          toast.error("Failed to delete member. Please try again.");
+          console.error("Update failed:", error);
+          toast.error("Failed to update member. Please try again.");
         }
       };
 
-    const toggleMinistry = (ministry) => {
-        setEditFormData(prev => {
-            const list = Array.isArray(prev.church_ministry) ? prev.church_ministry : [];
-            const exists = list.includes(ministry);
-            const next = exists ? list.filter(m => m !== ministry) : [...list, ministry];
-            return { ...prev, church_ministry: next };
-        });
+    // delete member
+    const handleDelete = async (member_id) => {
+        const confirmed = window.confirm("Are you sure you want to delete this member?");
+        if (!confirmed) return;
+
+        try {
+            //changed API to axios
+            const res = await axios.delete(`http://localhost:5000/api/members/${member_id}`);
+            fetchMembers();
+            if (res.status !== 200) throw new Error("Failed to delete member");
+
+            // Remove deleted member from local state
+            setMembers((prev) => prev.filter((m) => m.member_id !== member_id));
+            toast.success("Member deleted successfully!");
+            if (currentMemberRows.length === 1 && currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+            }
+
+        } catch (error) {
+            console.error("Delete error:", error);
+            toast.error("Failed to delete member. Please try again.");
+        }
     };
+
+   const toggleMinistry = (ministry) => {
+    setEditFormData(prev => {
+        const list = Array.isArray(prev.church_ministry) ? prev.church_ministry : [];
+        const exists = list.includes(ministry);
+        const next = exists ? list.filter(m => m !== ministry) : [...list, ministry];
+
+        // Prepare the new state object
+        const updatedState = { ...prev, church_ministry: next };
+
+        // If "Others" was just removed, clear the details field
+        if (ministry === "Others" && exists) {
+            updatedState.other_ministry_details = "";
+        }
+
+        return updatedState;
+    });
+};
 
     const toggleTraining = (training) => {
         setEditFormData(prev => {
@@ -1133,6 +1015,13 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                 member_status: selectedStatus,
                 date_from: startDate,
                 date_to: endDate,
+                birth_month: selectedBirthMonth !== 'all' ? Number(selectedBirthMonth) : undefined, // added birth_month filter
+                church_ministry: selectedMinistry !== 'all' ? selectedMinistry : undefined, //added ministry filter
+                water_baptized: selectedWaterBaptized !== 'all' ? (selectedWaterBaptized === 'true') : undefined, //added water baptized filter
+                marital_status: selectedMaritalStatus !== 'all' ? selectedMaritalStatus : undefined, //added marital status filter
+                spiritual_trainings: selectedTraining !== 'all' ? [selectedTraining] : undefined, // fix on going
+
+
             };
 
             const res = await axios.post(
@@ -1188,11 +1077,14 @@ export const Reports = ({ isDark, onToggleTheme }) => {
         }
     };
 
+    
+
     // --- Component for Member Records ---
-    const MemberRecords = () => (
+    const renderMemberRecords = () => (
         <>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
                 <div className="flex items-center gap-3">
+                    
                     <div className="w-8 h-8 bg-indigo-500/10 dark:bg-indigo-300/10 rounded-lg flex items-center justify-center shrink-0">
                         <Filter className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
@@ -1241,8 +1133,8 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                         </SelectTrigger>
                         <SelectContent className="bg-white dark:bg-gray-800">
                             <SelectItem value="all" className="text-gray-900 dark:text-white">All Status</SelectItem>
-                            <SelectItem value="active" className="text-gray-900 dark:text-white">Active</SelectItem>
-                            <SelectItem value="inactive" className="text-gray-900 dark:text-white">Inactive</SelectItem>
+                            <SelectItem value="Active" className="text-gray-900 dark:text-white">Active</SelectItem> {/* capitatlized the first letter of the value */}
+                            <SelectItem value="Inactive" className="text-gray-900 dark:text-white">Inactive</SelectItem> {/* capitatlized the first letter of the value */}
                         </SelectContent>
                     </Select>
                 </div>
@@ -1280,24 +1172,29 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                     </Select>
                 </div>
 
-                {/* 5. Birth Month Filter (NEW) */}
-                <div className="space-y-2">
-                    <Label htmlFor="birthMonth" className="text-gray-700 dark:text-gray-300 font-medium">Birth Month</Label>
-                    {/*<Select value={selectedBirthMonth} onValueChange={setSelectedBirthMonth}> 
-                        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                            <SelectValue placeholder="Select Month" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white dark:bg-gray-800">
-                            <SelectItem value="all" className="text-gray-900 dark:text-white">All Months</SelectItem>
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map(monthNum => {
-                                const monthName = new Date(0, monthNum - 1).toLocaleString('en-US', { month: 'long' });
-                                return <SelectItem key={monthNum} value={monthNum.toString()} className="text-gray-900 dark:text-white">{monthName}</SelectItem>;
-                            })}
-                        </SelectContent>
-                    </Select>
-                    */}
-                </div>
-
+              {/* 5. Birth Month Filter (RESTORED) */}
+<div className="space-y-2">
+    <Label htmlFor="birthMonth" className="text-gray-700 dark:text-gray-300 font-medium">Birth Month</Label>
+    <Select 
+        value={selectedBirthMonth} 
+        onValueChange={setSelectedBirthMonth}
+    > 
+        <SelectTrigger className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+            <SelectValue placeholder="Select Month" />
+        </SelectTrigger>
+        <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <SelectItem value="all" className="text-gray-900 dark:text-white">All Months</SelectItem>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(monthNum => {
+                const monthName = new Date(0, monthNum - 1).toLocaleString('en-US', { month: 'long' });
+                return (
+                    <SelectItem key={monthNum} value={monthNum.toString()} className="text-gray-900 dark:text-white">
+                        {monthName}
+                    </SelectItem>
+                );
+            })}
+        </SelectContent>
+    </Select>
+</div>
                 {/* 6. Water Baptized Filter (NEW) */}
                 <div className="space-y-2">
                     <Label htmlFor="waterBaptized" className="text-gray-700 dark:text-gray-300 font-medium">Water Baptized</Label>
@@ -1332,13 +1229,13 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                 {/* 8. Date Attended From (Existing - line 663 approximation) */}
                 <div className="space-y-2">
                     <Label htmlFor="dateFrom" className="text-gray-700 dark:text-gray-300 font-medium">Date Attended From</Label>
-                    <Input id="dateFrom" type="month" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200" />
+                    <Input id="dateFrom" type="month" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 dark:[color-scheme:dark]" />
                 </div>
 
                 {/* 9. Date Attended To (Existing) */}
                 <div className="space-y-2">
                     <Label htmlFor="dateTo" className="text-gray-700 dark:text-gray-300 font-medium">Date Attended To</Label>
-                    <Input id="dateTo" type="month" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200" />
+                    <Input id="dateTo" type="month" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 dark:[color-scheme:dark]" />
                 </div>
 
                 {/* 10. Apply/Clear Buttons (Existing) */}
@@ -1372,9 +1269,14 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                     <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="flex items-center gap-2 border-indigo-400 text-indigo-600 dark:border-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors">
                         <Download className="w-4 h-4" /> Import CSV
                     </Button>
-                    <Button onClick={handleExportPost} variant="outline" className="flex items-center gap-2 border-indigo-400 text-indigo-600 dark:border-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors">
-                        <Download className="w-4 h-4 mr-1" /> Export CSV
-                    </Button>
+                    <Button 
+    onClick={handleExportPost} 
+    variant="outline" 
+    className="flex items-center gap-2 border-indigo-400 text-indigo-600 dark:border-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors"
+>
+    <Upload className="w-4 h-4" /> 
+    Export CSV
+</Button>
                 </div>
             </div>
 
@@ -1507,7 +1409,7 @@ export const Reports = ({ isDark, onToggleTheme }) => {
     );
 
     // --- Component for Attendance Records ---
-    const AttendanceRecords = () => (
+    const renderAttendanceRecords = () => (
         <>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
                 <div className="flex items-center gap-3">
@@ -1530,14 +1432,14 @@ export const Reports = ({ isDark, onToggleTheme }) => {
 
             <div className="grid grid-cols-4 gap-4">
 
-                <div className="space-y-2 col-span-4 lg:col-span-1">
+                <div className="space-y-3 col-span-4 lg:col-span-1">
                     <Label htmlFor="attendance_date" className="text-gray-700 dark:text-gray-300 font-medium">Select Date</Label>
                     <Input
                         id="attendance_date"
                         type="date"
                         value={attendanceDate}
                         onChange={(e) => setAttendanceDate(e.target.value)}
-                        className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                        className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 dark:[color-scheme:dark]"
                     />
                 </div>
 
@@ -1561,18 +1463,27 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                 </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-4 pb-6 border-b border-gray-200 dark:border-gray-700 mb-6">
-                <div className="flex items-center gap-3 mb-3 sm:mb-0">
-                    <ListChecks className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-                    <h3 className="font-bold text-xl text-gray-800 dark:text-gray-200">
-                        Attendance History (<span className="text-teal-600 dark:text-teal-400">{attendanceRecords.length}</span> records)
-                    </h3>
-                </div>
-                <Button onClick={handleExportAttendance} variant="outline" className="flex items-center gap-2 border-teal-400 text-teal-600 dark:border-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors">
-                    <Download className="w-4 h-4" /> Export CSV
-                </Button>
-            </div>
+             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-4 pb-6 border-b border-gray-200 dark:border-gray-700 mb-6">
 
+    <div className="flex items-center gap-3 mb-3 sm:mb-0">
+
+        <ListChecks className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+
+        <h3 className="font-bold text-xl text-gray-800 dark:text-gray-200">
+
+            Attendance History (<span className="text-teal-600 dark:text-teal-400">{attendanceRecords.length}</span> records)
+
+        </h3>
+    </div>
+    <Button 
+        onClick={handleExportAttendance} 
+        variant="outline" 
+        className="flex items-center gap-2 border-teal-400 text-teal-600 dark:border-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors"
+    >
+        <Upload className="w-4 h-4" /> 
+        Export CSV
+    </Button>
+</div>
             <Card className="overflow-x-auto border border-gray-200 dark:border-gray-700 shadow-xl rounded-lg">
                 <Table className="min-w-full">
                     <TableHeader>
@@ -1643,66 +1554,101 @@ export const Reports = ({ isDark, onToggleTheme }) => {
 
     // --- Main Render ---
     return (
+        
         <div
             className={`min-h-screen ${isDark ? 'dark bg-gradient-to-br from-gray-900 to-indigo-950 text-gray-50' : 'bg-gradient-to-br from-gray-50 to-indigo-50 text-gray-900'}`}
         >
             {/* Desktop Header */}
-            <div className="hidden lg:block bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                                <User className="w-5 h-5 text-white" />
-                            </div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                                Logs and Reports
-                            </h1>
-                        </div>
-                        <Button variant="outline" onClick={onToggleTheme} className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                            {isDark ? <><Sun className="w-4 h-4 mr-2" /> Light Mode</> : <><Moon className="w-4 h-4 mr-2" /> Dark Mode</>}
-                        </Button>
-                    </div>
+<div className="hidden lg:block bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-10">
+    <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                    <User className="w-5 h-5 text-white" />
                 </div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                    Logs and Reports
+                </h1>
             </div>
+
+            {/* --- Updated Theme Toggle Button --- */}
+            <button 
+                onClick={onToggleTheme} 
+                className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-300 ring-1 ring-slate-200 dark:ring-slate-700 shadow-sm active:scale-90"
+            >
+                {isDark ? (
+                    <Moon className="w-5 h-5 text-indigo-400" /> 
+                ) : (
+                    <Sun className="w-5 h-5 text-amber-500" />
+                )}
+            </button>
+            {/* ------------------------------------ */}
+
+        </div>
+    </div>
+</div>
             {/* --- Main Content Area --- */}
-            <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <Card className="shadow-2xl border-none bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-4 sm:p-6 lg:p-8">
+<div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+    >
+        <Card className="shadow-2xl border-none bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-4 sm:p-6 lg:p-8">
 
-                        {/* Main Tab Navigation */}
-                        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full mb-8">
-                            <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-700 shadow-lg">
-                                <TabsTrigger value="members" className="flex items-center gap-2 font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:dark:bg-indigo-500">
-                                    <Users className="w-4 h-4" /> Member Records
-                                </TabsTrigger>
-                                <TabsTrigger value="attendance" className="flex items-center gap-2 font-semibold data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:dark:bg-teal-500">
-                                    <ListChecks className="w-4 h-4" /> Attendance Records
-                                </TabsTrigger>
-                            </TabsList>
+            {/* Main Tab Navigation */}
+<Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full mb-8">
+  <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 shadow-lg p-1 h-auto">
+    
+    {/* Member Records Tab */}
+    <TabsTrigger 
+      value="members" 
+      className="flex items-center justify-center gap-2 py-3 px-4 transition-all duration-200
+        data-[state=active]:bg-blue-600 
+        data-[state=active]:text-white 
+        data-[state=active]:shadow-md
+        hover:bg-gray-200 dark:hover:bg-gray-700"
+    >
+      <Users className="w-4 h-4" /> 
+      <span className="font-medium">Member Records</span>
+    </TabsTrigger>
 
-                            {/* Member Records Tab Content */}
-                            <TabsContent value="members" className="mt-6">
-                                <Card className="p-5 bg-gray-50 dark:bg-gray-900 shadow-inner border border-gray-200 dark:border-gray-700 mb-8">
-                                    <MemberRecords />
-                                </Card>
-                            </TabsContent>
+    {/* Attendance Records Tab */}
+    <TabsTrigger 
+      value="attendance" 
+      className="flex items-center justify-center gap-2 py-3 px-4 transition-all duration-200
+        data-[state=active]:bg-indigo-600 
+        data-[state=active]:text-white 
+        data-[state=active]:shadow-md
+        hover:bg-gray-200 dark:hover:bg-gray-700"
+    >
+      <ListChecks className="w-4 h-4" /> 
+      <span className="font-medium">Attendance Records</span>
+    </TabsTrigger>
 
-                            {/* Attendance Records Tab Content */}
-                            <TabsContent value="attendance" className="mt-6">
-                                <Card className="p-5 bg-gray-50 dark:bg-gray-900 shadow-inner border border-gray-200 dark:border-gray-700 mb-8">
-                                    <AttendanceRecords />
-                                </Card>
-                            </TabsContent>
+  </TabsList>
 
-                        </Tabs>
-
+                {/* Member Records Tab Content */}
+                <TabsContent value="members" className="mt-6">
+                    <Card className="p-5 bg-gray-50 dark:bg-gray-900 shadow-inner border border-gray-200 dark:border-gray-700 mb-8">
+                        {/* ✅ TAMA: Function call gamit ang curly braces */}
+                        {renderMemberRecords()}
                     </Card>
-                </motion.div>
-            </div>
+                </TabsContent>
+
+                {/* Attendance Records Tab Content */}
+                <TabsContent value="attendance" className="mt-6">
+                    <Card className="p-5 bg-gray-50 dark:bg-gray-900 shadow-inner border border-gray-200 dark:border-gray-700 mb-8">
+                        {/* ✅ TAMA: Function call gamit ang curly braces */}
+                        {renderAttendanceRecords()}
+                    </Card>
+                </TabsContent>
+
+            </Tabs>
+
+        </Card>
+    </motion.div>
+</div>
 
             {/* Edit/View Modal (The parent div wrapper now applies the theme to the modal contents) */}
             {showEditModal && selectedMember && (
