@@ -791,7 +791,9 @@ export const Reports = ({ isDark, onToggleTheme }) => {
                     age_group: selectedAgeGroup,
                     member_status: selectedStatus,
                     church_ministry: selectedMinistry,
-                    spiritual_trainings: selectedTraining ? [selectedTraining] : [],
+                    spiritual_trainings: selectedTraining !== 'all'
+                        ? [selectedTraining]
+                        : undefined,
                     birth_month: selectedBirthMonth !== "all" ? selectedBirthMonth : undefined,
                     water_baptized: selectedWaterBaptized,
                     marital_status: selectedMaritalStatus,

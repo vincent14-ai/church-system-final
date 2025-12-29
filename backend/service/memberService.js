@@ -95,7 +95,7 @@ export async function getMembers(filters = {}) {
       water_baptized,
       member_status,
       created_at,
-      spiritual_trainings (
+      spiritual_trainings!inner (
         training_type,
         year
       ),
@@ -132,7 +132,6 @@ export async function getMembers(filters = {}) {
     query = query.eq('member_status', member_status);
   }
 
-  //changed to work with partial matches
   if (church_ministry && church_ministry !== 'all') {
     query = query.ilike(
       'church_ministry',
@@ -140,19 +139,24 @@ export async function getMembers(filters = {}) {
     );
   }
 
-  // added birth_month filter
   const { birth_month } = filters;
 
   if (birth_month && birth_month !== 'all') {
     query = query.eq('birth_month', Number(birth_month));
   }
 
-  // fix on going
-if (spiritual_trainings && spiritual_trainings !== 'all') {
-  query = query.eq('spiritual_trainings.training_type', spiritual_trainings);
+  if (
+  spiritual_trainings &&
+  Array.isArray(spiritual_trainings) &&
+  spiritual_trainings.length > 0
+) {
+  query = query.in(
+    'spiritual_trainings.training_type',
+    spiritual_trainings
+  );
 }
 
-// changed to properly filter boolean
+
   if (water_baptized !== undefined && water_baptized !== null) {
     const filterValue =
       water_baptized === 'true' || water_baptized === true

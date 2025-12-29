@@ -313,7 +313,9 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                     age_group: selectedAgeGroup,
                     member_status: selectedStatus,
                     church_ministry: selectedMinistry,
-                    spiritual_trainings: selectedTraining !== "all" ? selectedTraining : undefined,
+                    spiritual_trainings: selectedTraining !== 'all'
+                        ? [selectedTraining]
+                        : undefined,
                     birth_month: selectedBirthMonth !== "all" ? selectedBirthMonth : undefined,
                     water_baptized: selectedWaterBaptized,
                     marital_status: selectedMaritalStatus,
@@ -780,7 +782,7 @@ export default function ViewPersonalRecords({ isDark, onToggleTheme }) {
                                     </Select>
                                 </div>
 
-                                
+
                                 <div className="space-y-2">
                                     <Label htmlFor="birthMonth" className="text-gray-700 dark:text-gray-300 font-medium">Birth Month</Label>
                                     <Select value={selectedBirthMonth} onValueChange={setSelectedBirthMonth}>
