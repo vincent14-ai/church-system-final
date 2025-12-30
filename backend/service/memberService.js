@@ -1,4 +1,4 @@
-import supabase from "../config/db.js";
+import { supabase } from "../config/db.js";
 
 // 🔹 Add a new member
 export async function addMember(memberData) {

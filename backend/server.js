@@ -1,25 +1,22 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+
 import memberRoutes from "./route/memberRoutes.js";
 import authRoutes from "./route/authRoutes.js";
 import exportRoutes from "./route/exportRoutes.js";
 import importRoutes from "./route/importRoutes.js";
 import attendanceRoutes from "./route/attendanceRoutes.js";
-import cookieParser from "cookie-parser";
-
-dotenv.config();
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "http://localhost:3000", // your React app origin
-    credentials: true, // allow cookies and auth headers
-  })
-);
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/members", memberRoutes);
@@ -28,6 +25,6 @@ app.use("/api/import", importRoutes);
 app.use("/api/attendance", attendanceRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`Server running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`Backend running on http://localhost:${PORT}`);
+});

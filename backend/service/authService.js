@@ -1,4 +1,4 @@
-import supabase from "../config/db.js"; // your Supabase client
+import { supabase } from "../config/db.js"; // your Supabase client
 import bcrypt from "bcryptjs";
 import { generateToken } from "../config/jwt.js";
 

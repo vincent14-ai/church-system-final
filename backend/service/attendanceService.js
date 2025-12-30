@@ -1,4 +1,4 @@
-import supabase from "../config/db.js";
+import { supabase } from "../config/db.js";
 import { normalizeToLocalDate } from "../utils/date.js";
 
 export async function setAttendance(member_id, date, status) {

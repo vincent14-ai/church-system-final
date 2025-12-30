@@ -1,7 +1,9 @@
 {
-  "name": "church-systemfinal",
+  "name": "my-app",
   "version": "0.1.0",
   "private": true,
+  "homepage": "./",
+  "main": "main.js",
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.10",
@@ -37,7 +39,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "backend": "node backend/server.js",
+    "electron": "electron .",
+    "desktop:dev": "concurrently \"npm run backend\" \"npm run electron\"",
+    "desktop:build": "react-scripts build && electron-builder"
   },
   "eslintConfig": {
     "extends": [
@@ -62,11 +68,40 @@
     "@pmmmwh/react-refresh-webpack-plugin": "^0.6.1",
     "autoprefixer": "^10.4.21",
     "babel-loader": "^10.0.0",
+    "concurrently": "^9.2.1",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
     "html-webpack-plugin": "^5.6.4",
     "postcss": "^8.5.6",
     "react-scripts": "^5.0.1",
     "tailwindcss": "^3.4.18",
+    "wait-on": "^9.0.3",
     "webpack": "^5.102.0",
     "webpack-cli": "^6.0.1"
+  },
+  "build": {
+    "appId": "com.churchsystem.app",
+    "productName": "Church System",
+    "directories": {
+      "app": ".",
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "backend/**/*",
+      "main.js",
+      "package.json",
+      ".env"
+    ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
